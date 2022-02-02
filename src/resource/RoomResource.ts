@@ -54,7 +54,7 @@ export default class HomeResource extends Drash.Resource {
             roomId: room.roomId
         };
 
-        return response.json(jsonResponse);
+        return response.json(jsonResponse, 201);
     }
 }
 
