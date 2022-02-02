@@ -25,7 +25,7 @@ export default abstract class Round {
         return this.#playerTurn;
     }
 
-    handleChatMessage(message: string) {
+    handleChatMessage(_message: string) {
 
     }
 }

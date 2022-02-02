@@ -12,13 +12,13 @@ export class LoggerService extends Drash.Service {
         this.loggers = [new unilogger.ConsoleLogger({}), new unilogger.FileLogger({ file: "app.log" })];
     }
 
-    runBeforeResource(request: Drash.Request, response: Drash.Response) {
+    runBeforeResource(request: Drash.Request, _response: Drash.Response) {
         this.#timeStart = new Date().getTime();
         const message = `${request.method.toUpperCase()} ${new URL(request.url).pathname} | Request received`;
         this.loggers.forEach((logger) => logger.info(message));
     }
 
-    runAfterResource(request: Drash.Request, response: Drash.Response) {
+    runAfterResource(request: Drash.Request, _response: Drash.Response) {
         this.#timeEnd = new Date().getTime();
         const message = `${request.method.toUpperCase()} ${new URL(request.url).pathname}`
             + ` | Response sent [${getTime(this.#timeEnd, this.#timeStart)}]`;

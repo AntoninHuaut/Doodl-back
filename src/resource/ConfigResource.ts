@@ -7,7 +7,7 @@ export default class ConfigResource extends Drash.Resource {
         "/config"
     ];
 
-    public GET(request: Drash.Request, response: Drash.Response) {
+    public GET(_request: Drash.Request, response: Drash.Response) {
         return response.json(roomConfig);
     }
 }

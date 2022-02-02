@@ -3,7 +3,7 @@ import InvalidParameterValue from '../model/exception/InvalidParameterValue.ts';
 
 export default class ErrorHandler extends Drash.ErrorHandler {
 
-    public catch(error: Error, request: Request, response: Drash.Response): void | Promise<void> {
+    public catch(error: Error, _request: Request, response: Drash.Response): void {
         let code = 500;
         let message: string | z.ZodError = "Server failed to process the request.";
 
