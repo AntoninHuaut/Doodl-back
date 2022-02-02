@@ -4,6 +4,7 @@ import { serverConfig } from "./config.ts";
 
 import ErrorHandler from "./handler/ErrorHandler.ts";
 import HomeResource from "./resource/HomeResource.ts";
+import ConfigResource from "./resource/ConfigResource.ts";
 import FilesResource from "./resource/FilesResource.ts";
 import RoomResource from "./resource/RoomResource.ts";
 import SocketResource from "./resource/SocketResource.ts";
@@ -19,8 +20,9 @@ export const server = new Drash.Server({
         new ResponseTimeService(),
     ],
     resources: [
-        HomeResource,
+        ConfigResource,
         FilesResource,
+        HomeResource,
         RoomResource,
         SocketResource
     ],
