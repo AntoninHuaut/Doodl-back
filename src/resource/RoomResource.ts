@@ -29,10 +29,6 @@ export default class HomeResource extends Drash.Resource {
 
     public paths = ["/room/:roomId?"];
 
-    constructor() {
-        super();
-    }
-
     public GET(request: Drash.Request, response: Drash.Response) {
         const roomId: string | undefined = request.pathParam("roomId");
         const room = getRoomById(roomId);
