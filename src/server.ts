@@ -9,13 +9,15 @@ import FilesResource from "./resource/FilesResource.ts";
 import RoomResource from "./resource/RoomResource.ts";
 import SocketResource from "./resource/SocketResource.ts";
 
+export const loggerService = new LoggerService();
+
 export const server = new Drash.Server({
     hostname: serverConfig.hostname,
     port: serverConfig.port,
     protocol: serverConfig.secure ? "https" : "http",
     error_handler: ErrorHandler,
     services: [
-        new LoggerService(),
+        loggerService,
         new PaladinService(),
         new ResponseTimeService(),
         new CORSService()

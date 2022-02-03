@@ -1,5 +1,6 @@
 import { Drash, z } from "../deps.ts";
 import InvalidParameterValue from '../model/exception/InvalidParameterValue.ts';
+import { loggerService } from '../server.ts';
 
 export default class ErrorHandler extends Drash.ErrorHandler {
 
@@ -16,6 +17,10 @@ export default class ErrorHandler extends Drash.ErrorHandler {
         } else if (error instanceof Drash.Errors.HttpError) {
             code = error.code;
             message = error.message;
+        }
+
+        if (code == 500) {
+            loggerService.error(message);
         }
 
         return response.json({
