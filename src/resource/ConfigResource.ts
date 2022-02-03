@@ -11,9 +11,6 @@ export default class ConfigResource extends Drash.Resource {
         return response.json(roomConfig);
     }
 
-    public OPTIONS(_request: Drash.Request, response: Drash.Response) {
-        return response.json({
-            success: true
-        });
+    public OPTIONS(_request: Drash.Request, _response: Drash.Response) {
     }
 }
