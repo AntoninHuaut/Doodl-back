@@ -20,7 +20,9 @@ export const server = new Drash.Server({
         loggerService,
         new PaladinService(),
         new ResponseTimeService(),
-        new CORSService()
+        new CORSService({
+            allowMethods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS"
+        })
     ],
     resources: [
         ConfigResource,
