@@ -57,7 +57,7 @@ export default class SocketResource extends Drash.Resource {
                         error: errorResponse ?? "Unexcepted error"
                     }));
                 } else {
-                    socket.send(JSON.stringify(jsonRequest, null, 2));
+                    socket.send("OK");
                 }
             } catch (error) {
                 console.error(error); // TODO LOG

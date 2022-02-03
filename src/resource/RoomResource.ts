@@ -60,7 +60,9 @@ export default class HomeResource extends Drash.Resource {
     }
 
     public OPTIONS(_request: Drash.Request, response: Drash.Response) {
-        return response.html("");
+        return response.json({
+            success: true
+        });
     }
 }
 
