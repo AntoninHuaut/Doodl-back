@@ -1,3 +1,12 @@
+import { IPlayer } from './GameModel.ts';
+
+export interface SocketUser {
+    socket: WebSocket;
+    socketUUID: string;
+    player?: IPlayer;
+    roomId?: string;
+}
+
 export interface ISocketMessage {
     channel: SocketChannel;
 }
@@ -25,7 +34,9 @@ export interface IDataChatRequest {
 }
 
 export interface IDataChatResponse {
+    author: string;
     message: string;
+    timestamp: Date;
 }
 
 export enum SocketChannel {
