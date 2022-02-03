@@ -1,3 +1,3 @@
 globalThis.addEventListener("DOMContentLoaded", () => {
-  document.body.append("Test hook git");
+  document.body.append("Test hook git N°2");
 });
