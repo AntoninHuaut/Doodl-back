@@ -8,7 +8,6 @@ import ConfigResource from "./resource/ConfigResource.ts";
 import FilesResource from "./resource/FilesResource.ts";
 import RoomResource from "./resource/RoomResource.ts";
 import SocketResource from "./resource/SocketResource.ts";
-import OptionsResource from "./resource/OptionsResource.ts";
 
 export const server = new Drash.Server({
     hostname: serverConfig.hostname,
@@ -26,7 +25,6 @@ export const server = new Drash.Server({
         FilesResource,
         HomeResource,
         RoomResource,
-        SocketResource,
-        OptionsResource
+        SocketResource
     ],
 });
