@@ -58,6 +58,10 @@ export default class HomeResource extends Drash.Resource {
 
         return response.json(jsonResponse, 201);
     }
+
+    public OPTIONS(_request: Drash.Request, response: Drash.Response) {
+        return response.html("");
+    }
 }
 
 function checkValidPOST(gameMode: string, maxPlayer: number, timeByTurn: number) {
