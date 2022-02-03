@@ -1,4 +1,4 @@
-import { Drash, PaladinService, ResponseTimeService } from "./deps.ts";
+import { Drash, PaladinService, ResponseTimeService, CORSService } from "./deps.ts";
 import { LoggerService } from "./service/LoggerService.ts";
 import { serverConfig } from "./config.ts";
 
@@ -18,6 +18,7 @@ export const server = new Drash.Server({
         new LoggerService(),
         new PaladinService(),
         new ResponseTimeService(),
+        new CORSService()
     ],
     resources: [
         ConfigResource,
