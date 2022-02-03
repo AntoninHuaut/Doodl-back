@@ -1,14 +1,31 @@
 import { Drash, z } from "../deps.ts";
-import { ISocketMessageRequest, SocketChannel } from '../model/SocketModel.ts';
+import { ISocketMessageRequest, SocketChannel, IDataInitRequest, IDataChatRequest } from '../model/SocketModel.ts';
+import AuthentificationException from '../model/exception/AuthentificationException.ts';
+import { loggerService } from '../server.ts';
+import { createPlayer } from '../core/PlayerManager.ts';
+import { getRoomById, removePlayerIdToRoom } from '../core/RoomManager.ts';
+import { Room } from '../model/Room.ts';
+
+const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
+    roomId: z.string(),
+    name: z.string(),
+    imgUrl: z.string()
+});
+const DataChatRequestSchema: z.ZodSchema<IDataChatRequest> = z.object({
+    message: z.string()
+});
 
 const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object({
     channel: z.nativeEnum(SocketChannel),
-    data: z.object({
-        roomId: z.string(),
-        name: z.string(),
-        imgUrl: z.string()
-    })
+    data: DataInitRequestSchema.or(DataChatRequestSchema)
 });
+
+interface SocketUser {
+    socket: WebSocket;
+    roomId?: string;
+}
+
+const sockets = new Map<string, SocketUser>();
 
 export default class SocketResource extends Drash.Resource {
     public paths = ["/ws"];
@@ -22,7 +39,6 @@ export default class SocketResource extends Drash.Resource {
                 this.#addEventHandlers(socket);
                 return response.upgrade(socketResponse);
             } catch (error) {
-                console.log(error);
                 return response.text(error);
             }
         }
@@ -33,43 +49,97 @@ export default class SocketResource extends Drash.Resource {
     }
 
     #addEventHandlers(socket: WebSocket): void {
+        let socketUUID: string | null = null;
+
         socket.onopen = () => {
-            console.log("WebSocket connection opened!");
+            socketUUID = crypto.randomUUID();
+            sockets.set(socketUUID, { socket: socket });
+            loggerService.debug(`WebSocket ${socketUUID} - Connection opened`);
         };
 
         socket.onmessage = (e: MessageEvent) => {
-            let jsonRequest: ISocketMessageRequest | null = null;
-            let errorResponse: z.ZodIssue[] | string | null = null;
             try {
-                jsonRequest = SocketMessageRequestSchema.parse(JSON.parse(e.data));
+                if (!socketUUID) throw new AuthentificationException("Invalid UUID");
+
+                const jsonRequest = SocketMessageRequestSchema.parse(JSON.parse(e.data));
+                handleSocketMessage(socketUUID, jsonRequest);
             } catch (error) {
-                jsonRequest = null;
+                let errorResponse: z.ZodIssue[] | string;
+
                 if (error instanceof z.ZodError) {
                     errorResponse = error.issues;
                 } else {
                     errorResponse = error.name;
                 }
-            }
 
-            try {
-                if (!jsonRequest) {
-                    socket.send(JSON.stringify({
-                        error: errorResponse ?? "Unexcepted error"
-                    }));
-                } else {
-                    socket.send("OK");
-                }
-            } catch (error) {
-                console.error(error); // TODO LOG
+                return safeSend(socketUUID, JSON.stringify({ error: errorResponse }));
             }
         };
 
         socket.onclose = () => {
-            console.log("Connection closed.");
+            loggerService.debug(`WebSocket ${socketUUID} - Connection closed`);
+            if (socketUUID != null) {
+                const room: Room | undefined = getRoomById(sockets.get(socketUUID)?.roomId);
+                if (room != null) {
+                    removePlayerIdToRoom(socketUUID, room);
+                }
+                loggerService.debug(`Removing socket (${socketUUID})`);
+                sockets.delete(socketUUID);
+                socketUUID = null;
+            }
         };
 
         socket.onerror = (e: Event) => {
-            console.error("WebSocket error:", e);
+            loggerService.error(`WebSocket ${socketUUID} - WebSocket error: ${JSON.stringify(e, null, 2)}`);
         };
+    }
+}
+
+function handleSocketMessage(socketUUID: string, message: ISocketMessageRequest) {
+    const channel: SocketChannel = message.channel;
+    try {
+        const socketUser = sockets.get(socketUUID);
+        if (socketUser == null) throw new AuthentificationException("Invalid UUID");
+
+        switch (channel) {
+            case SocketChannel.INIT: {
+                const initMessage: IDataInitRequest = DataInitRequestSchema.parse(message.data);
+                createPlayer(socketUUID, initMessage);
+                socketUser.roomId = initMessage.roomId;
+
+                safeSend(socketUUID, JSON.stringify({ success: true }));
+                break;
+            }
+            case SocketChannel.CHAT: {
+                break;
+            }
+            case SocketChannel.DRAW: {
+                break;
+            }
+            default: {
+                safeSend(socketUUID, JSON.stringify({ error: "Invalid channel" }));
+                break;
+            }
+        }
+    } catch (error) {
+        let errorResponse: z.ZodIssue[] | string;
+
+        if (error instanceof z.ZodError) {
+            errorResponse = error.issues;
+        } else {
+            errorResponse = error.message;
+        }
+
+        safeSend(socketUUID, JSON.stringify({ error: errorResponse }));
+    }
+}
+
+function safeSend(socketUUID: string | null, message: string) {
+    try {
+        if (!socketUUID) throw new AuthentificationException("Invalid UUID");
+
+        sockets.get(socketUUID)?.socket.send(message);
+    } catch (error) {
+        loggerService.error(`WebSocket ${socketUUID ?? '??'} - ${error.stack}`);
     }
 }

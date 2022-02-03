@@ -25,6 +25,20 @@ export class Room {
         }
     }
 
+    addPlayer(player: IPlayer) {
+        if (!this.#players.includes(player)) {
+            this.#players.push(player);
+        }
+    }
+
+    hasPlayerId(playerId: string): boolean {
+        return this.#players.some((p: IPlayer) => p.playerId == playerId);
+    }
+
+    removePlayerId(playerId: string) {
+        this.#players = this.#players.filter((p: IPlayer) => p.playerId != playerId);
+    }
+
     get config(): IRoomConfig {
         return {
             gameMode: this.#gameMode,

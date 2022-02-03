@@ -25,6 +25,10 @@ export default class LoggerService extends Drash.Service {
         this.info(message);
     }
 
+    debug(message: any) {
+        this.loggers.forEach((logger) => logger.debug(message));
+    }
+
     info(message: any) {
         this.loggers.forEach((logger) => logger.info(message));
     }

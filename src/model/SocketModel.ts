@@ -1,6 +1,6 @@
 export interface ISocketMessageRequest {
     channel: SocketChannel;
-    data: IDataInitRequest;
+    data: IDataInitRequest | IDataChatRequest;
 }
 
 export interface IDataInitRequest {
@@ -11,6 +11,14 @@ export interface IDataInitRequest {
 
 export interface IDataInitResponse {
     playerId: string;
+}
+
+export interface IDataChatRequest {
+    message: string;
+}
+
+export interface IDataChatResponse {
+    message: string;
 }
 
 export enum SocketChannel {
