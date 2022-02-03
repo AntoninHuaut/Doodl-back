@@ -1,6 +1,6 @@
 export interface IAppConfig {
     server: IServerConfig;
-    room: IRoomConfig;
+    room: IRoomServerConfig;
 }
 
 export interface IServerConfig {
@@ -11,7 +11,7 @@ export interface IServerConfig {
     key_file?: string;
 }
 
-export interface IRoomConfig {
+export interface IRoomServerConfig {
     minMaxPlayer: number;
     maxMaxPlayer: number;
     minTimeByTurn: number;

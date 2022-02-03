@@ -1,4 +1,5 @@
 import { Drash } from "../deps.ts";
+import { ISocketMessageRequest } from '../model/SocketModel.ts';
 
 export default class SocketResource extends Drash.Resource {
     public paths = ["/ws"];
@@ -7,9 +8,9 @@ export default class SocketResource extends Drash.Resource {
         if (request.headers.has("connection") && request.headers.has("upgrade") &&
             request.headers.get("connection")!.toLowerCase().includes("upgrade") &&
             request.headers.get("upgrade")!.toLowerCase() === "websocket") {
-                try {
-                    const { socket, response: socketResponse } = Deno.upgradeWebSocket(request);
-                    this.#addEventHandlers(socket);
+            try {
+                const { socket, response: socketResponse } = Deno.upgradeWebSocket(request);
+                this.#addEventHandlers(socket);
                 return response.upgrade(socketResponse);
             } catch (error) {
                 console.log(error);
@@ -28,6 +29,7 @@ export default class SocketResource extends Drash.Resource {
         };
 
         socket.onmessage = (e: MessageEvent) => {
+            ISocketMessageRequest
             console.log(`Message received:`, e.data);
             try {
                 socket.send(`We received your message! You sent: ${e.data}`);

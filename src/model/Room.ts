@@ -1,6 +1,6 @@
 import Round from './round/Round.ts';
 import ClassicRound from './round/ClassicRound.ts';
-import { IPlayer, GameMode, RoomConfig, RoomStatus } from './GameModel.ts';
+import { IPlayer, GameMode, IRoomConfig, IRoomStatus } from './GameModel.ts';
 
 export class Room {
     #roomId: string;
@@ -25,7 +25,7 @@ export class Room {
         }
     }
 
-    get config(): RoomConfig {
+    get config(): IRoomConfig {
         return {
             gameMode: this.#gameMode,
             timeByTurn: this.#round.roundTimeDuration,
@@ -33,7 +33,7 @@ export class Room {
         }
     }
 
-    get status(): RoomStatus {
+    get status(): IRoomStatus {
         return {
             isPlaying: !!this.#round.dateStartedDrawing,
             playerList: this.#players,
