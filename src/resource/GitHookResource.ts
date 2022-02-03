@@ -7,7 +7,7 @@ export default class GitHookResource extends Drash.Resource {
 
     public POST(request: Drash.Request, response: Drash.Response): void {
         const serverGitlabToken = Deno.env.get("GITHOOK_GITLAB_TOKEN");
-        if (!serverGitlabToken) return;
+        if (!serverGitlabToken) throw new Drash.Errors.HttpError(404);
         const userGitlabToken = request.headers.get("X-Gitlab-Token");
 
         if (serverGitlabToken !== userGitlabToken) throw new Drash.Errors.HttpError(404);
