@@ -20,7 +20,7 @@ export default class ErrorHandler extends Drash.ErrorHandler {
         }
 
         if (code == 500) {
-            loggerService.error(message);
+            loggerService.error(error.stack);
         }
 
         return response.json({
