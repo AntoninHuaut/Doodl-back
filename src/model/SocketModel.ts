@@ -1,6 +1,13 @@
-export interface ISocketMessageRequest {
+export interface ISocketMessage {
     channel: SocketChannel;
+}
+
+export interface ISocketMessageRequest extends ISocketMessage {
     data: IDataInitRequest | IDataChatRequest;
+}
+
+export interface ISocketMessageResponse extends ISocketMessage {
+    data: IDataInitResponse | IDataChatResponse;
 }
 
 export interface IDataInitRequest {

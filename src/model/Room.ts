@@ -39,6 +39,14 @@ export class Room {
         this.#players = this.#players.filter((p: IPlayer) => p.playerId != playerId);
     }
 
+    getPlayersId() {
+        return this.#players.map(p => p.playerId);
+    }
+
+    get round(): Round {
+        return this.#round;
+    }
+
     get config(): IRoomConfig {
         return {
             gameMode: this.#gameMode,

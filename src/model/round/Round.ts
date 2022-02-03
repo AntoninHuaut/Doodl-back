@@ -1,4 +1,5 @@
 import { IPlayer } from '../GameModel.ts';
+import { IDataChatRequest } from '../SocketModel.ts';
 export default abstract class Round {
 
     #roundTimeDuration: number;
@@ -25,7 +26,7 @@ export default abstract class Round {
         return this.#playerTurn;
     }
 
-    handleChatMessage(_message: string) {
-
+    handleChatMessage(_message: IDataChatRequest, broadcastMessageFunc: () => void) {
+        broadcastMessageFunc();
     }
 }

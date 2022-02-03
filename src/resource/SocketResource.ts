@@ -1,10 +1,12 @@
 import { Drash, z } from "../deps.ts";
-import { ISocketMessageRequest, SocketChannel, IDataInitRequest, IDataChatRequest } from '../model/SocketModel.ts';
-import AuthentificationException from '../model/exception/AuthentificationException.ts';
+import { ISocketMessageRequest, SocketChannel, IDataInitRequest, IDataChatRequest, IDataChatResponse, IDataInitResponse, ISocketMessageResponse } from '../model/SocketModel.ts';
+import InvalidUUID from '../model/exception/InvalidUUID.ts';
 import { loggerService } from '../server.ts';
 import { createPlayer } from '../core/PlayerManager.ts';
 import { getRoomById, removePlayerIdToRoom } from '../core/RoomManager.ts';
 import { Room } from '../model/Room.ts';
+import InvalidParameterValue from '../model/exception/InvalidParameterValue.ts';
+import SocketInitNotPerformed from '../model/exception/SocketInitNotPerformed.ts';
 
 const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
     roomId: z.string(),
@@ -59,7 +61,7 @@ export default class SocketResource extends Drash.Resource {
 
         socket.onmessage = (e: MessageEvent) => {
             try {
-                if (!socketUUID) throw new AuthentificationException("Invalid UUID");
+                if (!socketUUID) throw new InvalidUUID();
 
                 const jsonRequest = SocketMessageRequestSchema.parse(JSON.parse(e.data));
                 handleSocketMessage(socketUUID, jsonRequest);
@@ -99,7 +101,7 @@ function handleSocketMessage(socketUUID: string, message: ISocketMessageRequest)
     const channel: SocketChannel = message.channel;
     try {
         const socketUser = sockets.get(socketUUID);
-        if (socketUser == null) throw new AuthentificationException("Invalid UUID");
+        if (socketUser == null) throw new InvalidUUID();
 
         switch (channel) {
             case SocketChannel.INIT: {
@@ -107,10 +109,33 @@ function handleSocketMessage(socketUUID: string, message: ISocketMessageRequest)
                 createPlayer(socketUUID, initMessage);
                 socketUser.roomId = initMessage.roomId;
 
-                safeSend(socketUUID, JSON.stringify({ success: true }));
+                const responseInitMessage: ISocketMessageResponse = {
+                    channel: SocketChannel.INIT,
+                    data: {
+                        playerId: socketUUID
+                    }
+                };
+                safeSend(socketUUID, JSON.stringify(responseInitMessage));
                 break;
             }
             case SocketChannel.CHAT: {
+                if (socketUser.roomId == null) throw new SocketInitNotPerformed();
+                const room: Room | undefined = getRoomById(socketUser.roomId);
+                if (room == null) throw new InvalidParameterValue("Invalid roomId");
+
+                const chatMessage: IDataChatRequest = DataChatRequestSchema.parse(message.data);
+                room.round.handleChatMessage(chatMessage, () => {
+                    const responseInitMessage: ISocketMessageResponse = {
+                        channel: SocketChannel.INIT,
+                        data: {
+                            message: chatMessage.message
+                        }
+                    };
+
+                    room.getPlayersId().forEach(otherPlayerId => {
+                        safeSend(otherPlayerId, JSON.stringify(responseInitMessage));
+                    });
+                });
                 break;
             }
             case SocketChannel.DRAW: {
@@ -136,7 +161,7 @@ function handleSocketMessage(socketUUID: string, message: ISocketMessageRequest)
 
 function safeSend(socketUUID: string | null, message: string) {
     try {
-        if (!socketUUID) throw new AuthentificationException("Invalid UUID");
+        if (!socketUUID) throw new InvalidUUID();
 
         sockets.get(socketUUID)?.socket.send(message);
     } catch (error) {
