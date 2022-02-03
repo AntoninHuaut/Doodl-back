@@ -1,6 +1,6 @@
 import { Drash, unilogger } from "../deps.ts";
 
-export class LoggerService extends Drash.Service {
+export default class LoggerService extends Drash.Service {
 
     #timeEnd = 0;
     #timeStart = 0;
