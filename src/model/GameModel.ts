@@ -13,7 +13,7 @@ export interface IPlayer {
 export interface IRoomStatus {
   isPlaying: boolean;
   playerList: IPlayer[];
-  playerTurn: IPlayer[] | IPlayer | null;
+  playerTurn: IPlayer[] | null;
 }
 
 export enum GameMode {

@@ -3,11 +3,11 @@ export default abstract class Round {
 
     #roundTimeDuration: number;
     #dateStartedDrawing: Date | null;
-    #playerTurn: IPlayer[] | IPlayer | null;
+    #playerTurn: IPlayer[] | null;
 
     // #gameChat: Chat;
 
-    constructor(roundTimeDuration: number, dateStartedDrawing: Date | null, playerTurn: IPlayer[] | IPlayer | null) {
+    constructor(roundTimeDuration: number, dateStartedDrawing: Date | null, playerTurn: IPlayer[] | null) {
         this.#roundTimeDuration = roundTimeDuration;
         this.#dateStartedDrawing = dateStartedDrawing;
         this.#playerTurn = playerTurn;
