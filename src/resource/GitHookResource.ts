@@ -5,7 +5,7 @@ export default class GitHookResource extends Drash.Resource {
 
     public paths = ["/githook"];
 
-    public async GET(request: Drash.Request, _response: Drash.Response): Promise<void> {
+    public async POST(request: Drash.Request, _response: Drash.Response): Promise<void> {
         const serverGitlabToken = Deno.env.get("GITHOOK_GITLAB_TOKEN");
         if (!serverGitlabToken) return;
         const userGitlabToken = request.headers.get("X-Gitlab-Token");
