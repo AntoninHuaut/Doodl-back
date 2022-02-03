@@ -1,5 +1,14 @@
-import { Drash } from "../deps.ts";
-import { ISocketMessageRequest } from '../model/SocketModel.ts';
+import { Drash, z } from "../deps.ts";
+import { ISocketMessageRequest, SocketChannel } from '../model/SocketModel.ts';
+
+const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object({
+    channel: z.nativeEnum(SocketChannel),
+    data: z.object({
+        roomId: z.string(),
+        name: z.string(),
+        imgUrl: z.string()
+    })
+});
 
 export default class SocketResource extends Drash.Resource {
     public paths = ["/ws"];
@@ -29,12 +38,29 @@ export default class SocketResource extends Drash.Resource {
         };
 
         socket.onmessage = (e: MessageEvent) => {
-            ISocketMessageRequest
-            console.log(`Message received:`, e.data);
+            let jsonRequest: ISocketMessageRequest | null = null;
+            let errorResponse: z.ZodIssue[] | string | null = null;
             try {
-                socket.send(`We received your message! You sent: ${e.data}`);
+                jsonRequest = SocketMessageRequestSchema.parse(JSON.parse(e.data));
             } catch (error) {
-                console.error(error);
+                jsonRequest = null;
+                if (error instanceof z.ZodError) {
+                    errorResponse = error.issues;
+                } else {
+                    errorResponse = error.name;
+                }
+            }
+
+            try {
+                if (!jsonRequest) {
+                    socket.send(JSON.stringify({
+                        error: errorResponse ?? "Unexcepted error"
+                    }));
+                } else {
+                    socket.send(JSON.stringify(jsonRequest, null, 2));
+                }
+            } catch (error) {
+                console.error(error); // TODO LOG
             }
         };
 
