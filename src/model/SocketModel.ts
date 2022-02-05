@@ -33,8 +33,13 @@ export interface IDataChatRequest {
     message: string;
 }
 
+export interface IMessageAuthor {
+    name: string;
+    imgUrl: string;
+}
+
 export interface IDataChatResponse {
-    author: string;
+    author: IMessageAuthor;
     message: string;
     timestamp: Date;
 }

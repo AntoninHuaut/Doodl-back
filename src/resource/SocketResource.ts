@@ -155,10 +155,13 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
     const chatMessage: IDataChatRequest = DataChatRequestSchema.parse(message.data);
     room.round.handleChatMessage(chatMessage, () => {
         const responseInitMessage: ISocketMessageResponse = {
-            channel: SocketChannel.INIT,
+            channel: SocketChannel.CHAT,
             data: {
                 message: chatMessage.message,
-                author: player.name,
+                author: {
+                    name: player.name,
+                    imgUrl: player.imgUrl
+                },
                 timestamp: new Date()
             }
         };
