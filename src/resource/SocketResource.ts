@@ -1,11 +1,12 @@
 import { Drash, z } from "../deps.ts";
-import { ISocketMessageRequest, SocketChannel, IDataInitRequest, IDataChatRequest, ISocketMessageResponse, SocketUser } from '../model/SocketModel.ts';
+import { ISocketMessageRequest, SocketChannel, IDataInitRequest, IDataChatRequest, ISocketMessageResponse, SocketUser, IDataChatResponse } from '../model/SocketModel.ts';
 import { loggerService } from '../server.ts';
 import { createPlayer, deletePlayer } from '../core/PlayerManager.ts';
 import { getRoomById } from '../core/RoomManager.ts';
 import { Room } from '../model/Room.ts';
 import InvalidParameterValue from '../model/exception/InvalidParameterValue.ts';
 import SocketInitNotPerformed from '../model/exception/SocketInitNotPerformed.ts';
+import { getValidChatMessage } from '../core/utils/ChatMessageUtils.ts';
 
 const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
     roomId: z.string(),
@@ -133,13 +134,18 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
 function onMessageInitChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
     const socketUUID = socketUser.socketUUID;
     const initMessage: IDataInitRequest = DataInitRequestSchema.parse(message.data);
+
+    const room: Room | undefined = getRoomById(initMessage.roomId);
+    if (room == null) throw new InvalidParameterValue("Invalid roomId");
+
     socketUser.player = createPlayer(socketUser, initMessage);
-    socketUser.roomId = initMessage.roomId;
+    socketUser.roomId = room.roomId;
 
     const responseInitMessage: ISocketMessageResponse = {
         channel: SocketChannel.INIT,
         data: {
-            playerId: socketUUID
+            playerId: socketUUID,
+            messages: room.messages
         }
     };
     safeSend(socketUser, JSON.stringify(responseInitMessage));
@@ -154,18 +160,15 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
 
     const chatMessage: IDataChatRequest = DataChatRequestSchema.parse(message.data);
     room.round.handleChatMessage(chatMessage, () => {
+        const chatResponse: IDataChatResponse | undefined = getValidChatMessage(player, chatMessage.message);
+        if (!chatResponse) return;
+
         const responseInitMessage: ISocketMessageResponse = {
             channel: SocketChannel.CHAT,
-            data: {
-                message: chatMessage.message,
-                author: {
-                    name: player.name,
-                    imgUrl: player.imgUrl
-                },
-                timestamp: new Date()
-            }
+            data: chatResponse
         };
 
+        room.addMessage(chatResponse);
         room.getPlayersId().forEach(otherPlayerId => {
             const otherSocketUser = sockets.get(otherPlayerId);
             if (otherSocketUser != null) {

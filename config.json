@@ -8,6 +8,7 @@
     "minMaxPlayer": 2,
     "maxMaxPlayer": 32,
     "minTimeByTurn": 5,
-    "maxTimeByTurn": 600
+    "maxTimeByTurn": 600,
+    "maxChatMessageLength": 280
   }
 }

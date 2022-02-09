@@ -1,6 +1,7 @@
 import Round from './round/Round.ts';
 import ClassicRound from './round/ClassicRound.ts';
 import { IPlayer, GameMode, IRoomConfig, IRoomStatus } from './GameModel.ts';
+import { IDataChatResponse } from './SocketModel.ts';
 
 export class Room {
     #roomId: string;
@@ -9,12 +10,14 @@ export class Room {
 
     #gameMode: GameMode;
     #maxPlayer: number;
+    #messages: IDataChatResponse[];
 
     constructor(roomId: string, gameMode: GameMode, maxPlayer: number, roundTimeDuration: number) {
         this.#roomId = roomId;
         this.#gameMode = gameMode;
         this.#maxPlayer = maxPlayer;
         this.#players = [];
+        this.#messages = [];
 
         switch (gameMode) {
             case 'CLASSIC':
@@ -41,6 +44,14 @@ export class Room {
 
     getPlayersId() {
         return this.#players.map(p => p.playerId);
+    }
+
+    get messages() {
+        return this.#messages;
+    }
+
+    addMessage(message: IDataChatResponse) {
+        this.#messages.push(message);
     }
 
     get round(): Round {
