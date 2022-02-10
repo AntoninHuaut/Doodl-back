@@ -27,6 +27,7 @@ export interface IDataInitRequest {
 
 export interface IDataInitResponse {
     playerId: string;
+    messages: IDataChatResponse[];
 }
 
 export interface IDataChatRequest {
