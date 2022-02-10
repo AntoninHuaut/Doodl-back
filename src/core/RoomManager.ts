@@ -25,6 +25,8 @@ export function isRoomExist(roomId: string): boolean {
 export function addPlayerToRoom(player: IPlayer, room: Room) {
     loggerService.debug(`Adding player (${player.playerId}) to room (${room.roomId})`);
     room.addPlayer(player);
+
+    room.round.playerTurn.push(player); // WIP TODO DEV
 }
 
 export function removePlayerIdToRoom(playerId: string, room: Room) {

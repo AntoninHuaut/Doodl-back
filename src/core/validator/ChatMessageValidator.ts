@@ -1,8 +1,7 @@
-import { IDataChatResponse } from '../../model/SocketModel.ts';
-import { IPlayer } from '../../model/GameModel.ts';
+import { IPlayer, IMessage } from '../../model/GameModel.ts';
 import { roomConfig } from '../../config.ts';
 
-export function getValidChatMessage(player: IPlayer, message: string): IDataChatResponse | undefined {
+export function getValidChatMessage(player: IPlayer, message: string): IMessage | undefined {
     if (!isValidMessage(message)) return undefined;
 
     return {

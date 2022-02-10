@@ -1,7 +1,6 @@
 import Round from './round/Round.ts';
 import ClassicRound from './round/ClassicRound.ts';
-import { IPlayer, GameMode, IRoomConfig, IRoomStatus } from './GameModel.ts';
-import { IDataChatResponse } from './SocketModel.ts';
+import { IPlayer, GameMode, IRoomConfig, IRoomStatus, IMessage } from './GameModel.ts';
 
 export class Room {
     #roomId: string;
@@ -10,7 +9,7 @@ export class Room {
 
     #gameMode: GameMode;
     #maxPlayer: number;
-    #messages: IDataChatResponse[];
+    #messages: IMessage[];
 
     constructor(roomId: string, gameMode: GameMode, maxPlayer: number, roundTimeDuration: number) {
         this.#roomId = roomId;
@@ -21,7 +20,7 @@ export class Room {
 
         switch (gameMode) {
             case 'CLASSIC':
-                this.#round = new ClassicRound(roundTimeDuration, null, null);
+                this.#round = new ClassicRound(roundTimeDuration, null, []);
                 break;
             default:
                 throw new Error("Invalid gameMode");
@@ -50,7 +49,7 @@ export class Room {
         return this.#messages;
     }
 
-    addMessage(message: IDataChatResponse) {
+    addMessage(message: IMessage) {
         this.#messages.push(message);
     }
 
