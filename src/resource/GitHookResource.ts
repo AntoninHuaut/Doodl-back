@@ -15,7 +15,7 @@ export default class GitHookResource extends Drash.Resource {
         response.headers.set("Accept", "application/vnd.contentful.management.v1+json");
         setTimeout(async () => {
             loggerService.info("Git Hook, deploying...")
-            const p = Deno.run({ cmd: ["./deploy.sh"] });
+            const p = Deno.run({ cmd: ["./deployBack.sh"] });
             const { success, code, signal } = await p.status();
             loggerService.info(`Git Hook, ${success} - ${code} - ${signal}`);
         }, 100);
