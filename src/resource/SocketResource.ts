@@ -1,12 +1,15 @@
 import { Drash, z } from "../deps.ts";
-import { ISocketMessageRequest, SocketChannel, IDataInitRequest, IDataChatRequest, ISocketMessageResponse, SocketUser, IDataChatResponse } from '../model/SocketModel.ts';
+import { ISocketMessageRequest, SocketChannel, IDataInitRequest, IDataChatRequest, ISocketMessageResponse, SocketUser, IDataDrawResponse } from '../model/SocketModel.ts';
 import { loggerService } from '../server.ts';
 import { createPlayer, deletePlayer } from '../core/PlayerManager.ts';
 import { getRoomById } from '../core/RoomManager.ts';
 import { Room } from '../model/Room.ts';
 import InvalidParameterValue from '../model/exception/InvalidParameterValue.ts';
 import SocketInitNotPerformed from '../model/exception/SocketInitNotPerformed.ts';
-import { getValidChatMessage } from '../core/utils/ChatMessageUtils.ts';
+import { getValidChatMessage } from '../core/validator/ChatMessageValidator.ts';
+import { IMessage, DrawTool, IPlayer, IDraw } from '../model/GameModel.ts';
+import { isPlayerCanDraw } from '../core/validator/DrawValidator.ts';
+import InvalidPermission from '../model/exception/InvalidPermission.ts';
 
 const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
     roomId: z.string(),
@@ -16,10 +19,19 @@ const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
 const DataChatRequestSchema: z.ZodSchema<IDataChatRequest> = z.object({
     message: z.string()
 });
+const DataDrawSchema: z.ZodSchema<IDraw> = z.object({
+    tool: z.nativeEnum(DrawTool),
+    coords: z.object({
+        x: z.number(),
+        y: z.number()
+    }),
+    color: z.string().optional(),
+    lineWidth: z.number().optional()
+});
 
 const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object({
     channel: z.nativeEnum(SocketChannel),
-    data: DataInitRequestSchema.or(DataChatRequestSchema)
+    data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawSchema)
 });
 
 const sockets = new Map<string, SocketUser>();
@@ -109,7 +121,7 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
             }
             case SocketChannel.DRAW: {
                 loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Handle channel (${SocketChannel.DRAW})`);
-                // TODO
+                onMessageDrawChannel(socketUser, message);
                 break;
             }
             default: {
@@ -145,25 +157,22 @@ function onMessageInitChannel(socketUser: SocketUser, message: ISocketMessageReq
         channel: SocketChannel.INIT,
         data: {
             playerId: socketUUID,
-            messages: room.messages
+            messages: room.messages,
+            draws: room.round.draws
         }
     };
     safeSend(socketUser, JSON.stringify(responseInitMessage));
 }
 
 function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
-    const roomId = socketUser.roomId;
-    const player = socketUser.player;
-    if (roomId == null || player == null) throw new SocketInitNotPerformed();
-    const room: Room | undefined = getRoomById(roomId);
-    if (room == null) throw new InvalidParameterValue("Invalid roomId");
-
+    const [player, room] = checkInitAndGetRoom(socketUser);
     const chatMessage: IDataChatRequest = DataChatRequestSchema.parse(message.data);
+
     room.round.handleChatMessage(chatMessage, () => {
-        const chatResponse: IDataChatResponse | undefined = getValidChatMessage(player, chatMessage.message);
+        const chatResponse: IMessage | undefined = getValidChatMessage(player, chatMessage.message);
         if (!chatResponse) return;
 
-        const responseInitMessage: ISocketMessageResponse = {
+        const responseChatMessage: ISocketMessageResponse = {
             channel: SocketChannel.CHAT,
             data: chatResponse
         };
@@ -172,10 +181,41 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
         room.getPlayersId().forEach(otherPlayerId => {
             const otherSocketUser = sockets.get(otherPlayerId);
             if (otherSocketUser != null) {
-                safeSend(otherSocketUser, JSON.stringify(responseInitMessage));
+                safeSend(otherSocketUser, JSON.stringify(responseChatMessage));
             }
         });
     });
+}
+
+function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
+    const [player, room] = checkInitAndGetRoom(socketUser);
+    if (!isPlayerCanDraw(player, room)) throw new InvalidPermission("You don't have the permission to draw");
+
+    const drawMessage: IDraw = DataDrawSchema.parse(message.data);
+    const drawMessageEnhance: IDataDrawResponse = { ...drawMessage, draftsman: player };
+
+    const responseDrawMessage: ISocketMessageResponse = {
+        channel: SocketChannel.DRAW,
+        data: drawMessageEnhance
+    };
+
+    room.round.addDraw(drawMessage);
+    room.getPlayersId().forEach(otherPlayerId => {
+        const otherSocketUser = sockets.get(otherPlayerId);
+        if (otherSocketUser != null) {
+            safeSend(otherSocketUser, JSON.stringify(responseDrawMessage));
+        }
+    });
+}
+
+function checkInitAndGetRoom(socketUser: SocketUser): [IPlayer, Room] {
+    const roomId = socketUser.roomId;
+    const player = socketUser.player;
+    if (roomId == null || player == null) throw new SocketInitNotPerformed();
+    const room: Room | undefined = getRoomById(roomId);
+    if (room == null) throw new InvalidParameterValue("Invalid roomId");
+
+    return [player, room];
 }
 
 function safeSend(socketUser: SocketUser, message: string) {
