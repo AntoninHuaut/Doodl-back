@@ -29,6 +29,11 @@ export interface IDraw {
   lineWidth?: number;
 }
 
+export enum RoomState {
+  LOBBY = "LOBBY",
+  INGAME = "INGAME"
+}
+
 export enum DrawTool {
   BRUSH = "BRUSH",
   ERASER = "ERASER",

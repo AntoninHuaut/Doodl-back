@@ -1,4 +1,4 @@
-import { IPlayer, IMessage, IDraw } from './GameModel.ts';
+import { IPlayer, IMessage, IDraw, RoomState } from './GameModel.ts';
 
 export interface SocketUser {
     socket: WebSocket;
@@ -12,11 +12,11 @@ export interface ISocketMessage {
 }
 
 export interface ISocketMessageRequest extends ISocketMessage {
-    data: IDataInitRequest | IDataChatRequest | IDraw;
+    data?: IDataInitRequest | IDataChatRequest | IDraw;
 }
 
 export interface ISocketMessageResponse extends ISocketMessage {
-    data: IDataInitResponse | IMessage | IDataDrawResponse;
+    data: IDataInitResponse | IMessage | IDataDrawResponse | IDataInfoResponse;
 }
 
 export interface IDataInitRequest {
@@ -41,8 +41,15 @@ export interface IDataDrawResponse extends IDraw {
     draftsman: IPlayer;
 }
 
+// IDataInfoRequest is empty
+export interface IDataInfoResponse {
+    roomState: RoomState;
+    playerList: IPlayer[];
+}
+
 export enum SocketChannel {
     INIT = "INIT",
     CHAT = "CHAT",
-    DRAW = "DRAW"
+    DRAW = "DRAW",
+    INFO = "INFO"
 }

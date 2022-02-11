@@ -1,20 +1,24 @@
 import Round from './round/Round.ts';
 import ClassicRound from './round/ClassicRound.ts';
-import { IPlayer, GameMode, IRoomConfig, IRoomStatus, IMessage } from './GameModel.ts';
+import { IPlayer, GameMode, IRoomConfig, IRoomStatus, IMessage, RoomState } from './GameModel.ts';
 
 export class Room {
-    #roomId: string;
-    #players: IPlayer[];
-    #round: Round;
 
+    #roomId: string;
+
+    #players: IPlayer[];
+    #messages: IMessage[];
+
+    #round: Round;
+    #state: RoomState;
     #gameMode: GameMode;
     #maxPlayer: number;
-    #messages: IMessage[];
 
     constructor(roomId: string, gameMode: GameMode, maxPlayer: number, roundTimeDuration: number) {
         this.#roomId = roomId;
         this.#gameMode = gameMode;
         this.#maxPlayer = maxPlayer;
+        this.#state = RoomState.LOBBY;
         this.#players = [];
         this.#messages = [];
 
@@ -45,12 +49,20 @@ export class Room {
         return this.#players.map(p => p.playerId);
     }
 
+    addMessage(message: IMessage) {
+        this.#messages.push(message);
+    }
+
+    get players() {
+        return this.#players;
+    }
+
     get messages() {
         return this.#messages;
     }
 
-    addMessage(message: IMessage) {
-        this.#messages.push(message);
+    get state(): RoomState {
+        return this.#state
     }
 
     get round(): Round {
@@ -67,7 +79,7 @@ export class Room {
 
     get status(): IRoomStatus {
         return {
-            isPlaying: !!this.#round.dateStartedDrawing,
+            isPlaying: this.#round.dateStartedDrawing !== null,
             playerList: this.#players,
             playerTurn: this.#round.playerTurn
         }

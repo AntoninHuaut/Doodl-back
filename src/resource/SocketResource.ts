@@ -31,7 +31,7 @@ const DataDrawSchema: z.ZodSchema<IDraw> = z.object({
 
 const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object({
     channel: z.nativeEnum(SocketChannel),
-    data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawSchema)
+    data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawSchema).optional()
 });
 
 const sockets = new Map<string, SocketUser>();
@@ -124,6 +124,11 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
                 onMessageDrawChannel(socketUser, message);
                 break;
             }
+            case SocketChannel.INFO: {
+                loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Handle channel (${SocketChannel.INFO})`);
+                onMessageInfoChannel(socketUser, message);
+                break;
+            }
             default: {
                 loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Invalid channel (${channel})`);
                 safeSend(socketUser, JSON.stringify({ error: "Invalid channel" }));
@@ -194,7 +199,7 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
     const drawMessage: IDraw = DataDrawSchema.parse(message.data);
     const drawMessageEnhance: IDataDrawResponse = { ...drawMessage, draftsman: player };
 
-    const responseDrawMessage: ISocketMessageResponse = {
+    const responseDraw: ISocketMessageResponse = {
         channel: SocketChannel.DRAW,
         data: drawMessageEnhance
     };
@@ -203,9 +208,24 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
     room.getPlayersId().forEach(otherPlayerId => {
         const otherSocketUser = sockets.get(otherPlayerId);
         if (otherSocketUser != null) {
-            safeSend(otherSocketUser, JSON.stringify(responseDrawMessage));
+            safeSend(otherSocketUser, JSON.stringify(responseDraw));
         }
     });
+}
+
+function onMessageInfoChannel(socketUser: SocketUser, _message: ISocketMessageRequest) {
+    const [player, room] = checkInitAndGetRoom(socketUser);
+    if (!isPlayerCanDraw(player, room)) throw new InvalidPermission("You don't have the permission to draw");
+
+    const responseInfo: ISocketMessageResponse = {
+        channel: SocketChannel.INFO,
+        data: {
+            roomState: room.state,
+            playerList: room.players
+        }
+    };
+
+    safeSend(socketUser, JSON.stringify(responseInfo));
 }
 
 function checkInitAndGetRoom(socketUser: SocketUser): [IPlayer, Room] {
