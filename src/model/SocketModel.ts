@@ -16,7 +16,7 @@ export interface ISocketMessageRequest extends ISocketMessage {
 }
 
 export interface ISocketMessageResponse extends ISocketMessage {
-    data: IDataInitResponse | IMessage | IDraw;
+    data: IDataInitResponse | IMessage | IDataDrawResponse;
 }
 
 export interface IDataInitRequest {
@@ -36,7 +36,10 @@ export interface IDataChatRequest {
 }
 // IDataChatResponse is equals to IMessage
 
-// IDataDraw<Request|Response> = IDraw
+// IDataDrawRequest = IDraw
+export interface IDataDrawResponse extends IDraw {
+    draftsman: IPlayer;
+}
 
 export enum SocketChannel {
     INIT = "INIT",

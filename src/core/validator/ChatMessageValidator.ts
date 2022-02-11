@@ -6,10 +6,7 @@ export function getValidChatMessage(player: IPlayer, message: string): IMessage 
 
     return {
         message: message,
-        author: {
-            name: player.name,
-            imgUrl: player.imgUrl
-        },
+        author: player,
         timestamp: new Date()
     }
 }

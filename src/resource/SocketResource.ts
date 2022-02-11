@@ -1,5 +1,5 @@
 import { Drash, z } from "../deps.ts";
-import { ISocketMessageRequest, SocketChannel, IDataInitRequest, IDataChatRequest, ISocketMessageResponse, SocketUser } from '../model/SocketModel.ts';
+import { ISocketMessageRequest, SocketChannel, IDataInitRequest, IDataChatRequest, ISocketMessageResponse, SocketUser, IDataDrawResponse } from '../model/SocketModel.ts';
 import { loggerService } from '../server.ts';
 import { createPlayer, deletePlayer } from '../core/PlayerManager.ts';
 import { getRoomById } from '../core/RoomManager.ts';
@@ -190,11 +190,13 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
 function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
     const [player, room] = checkInitAndGetRoom(socketUser);
     if (!isPlayerCanDraw(player, room)) throw new InvalidPermission("You don't have the permission to draw");
+
     const drawMessage: IDraw = DataDrawSchema.parse(message.data);
+    const drawMessageEnhance: IDataDrawResponse = { ...drawMessage, draftsman: player };
 
     const responseDrawMessage: ISocketMessageResponse = {
         channel: SocketChannel.DRAW,
-        data: drawMessage
+        data: drawMessageEnhance
     };
 
     room.round.addDraw(drawMessage);

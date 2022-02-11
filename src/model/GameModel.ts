@@ -4,12 +4,9 @@ export interface IRoomConfig {
   maxPlayer: number;
 }
 
-export interface IAuthor {
+export interface IPlayer {
   name: string;
   imgUrl: string;
-}
-
-export interface IPlayer extends IAuthor {
   playerId: string;
 }
 
@@ -20,7 +17,7 @@ export interface IRoomStatus {
 }
 
 export interface IMessage {
-  author: IAuthor;
+  author: IPlayer;
   message: string;
   timestamp: Date;
 }
