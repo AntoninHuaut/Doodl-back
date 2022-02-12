@@ -1,5 +1,5 @@
 export interface IRoomConfig {
-  gameMode: string;
+  gameMode: GameMode;
   timeByTurn: number;
   maxPlayer: number;
 }

@@ -2,5 +2,5 @@ import { IAppConfig, IServerConfig, IRoomServerConfig } from "./model/ConfigMode
 
 import configRaw from "../config.json"  assert { type: "json" };
 const globalConfig: IAppConfig = configRaw;
-export const serverConfig: IServerConfig = globalConfig.server;
-export const roomConfig: IRoomServerConfig = globalConfig.room;
+export const appServerConfig: IServerConfig = globalConfig.server;
+export const appRoomConfig: IRoomServerConfig = globalConfig.room;

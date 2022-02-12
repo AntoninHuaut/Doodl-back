@@ -1,12 +1,12 @@
-import { GameMode, IPlayer } from '../model/GameModel.ts';
+import { IPlayer } from '../model/GameModel.ts';
 import { Room } from '../model/Room.ts';
 import { loggerService } from '../server.ts';
 
 const ROOM_CODE_LENGTH = 8;
 const roomMap = new Map<string, Room>();
 
-export function createRoom(gameMode: GameMode, maxPlayer: number, roundTimeDuration: number): Room {
-    const room = new Room(generateRoomId(), gameMode, maxPlayer, roundTimeDuration);
+export function createRoom(): Room {
+    const room = new Room(generateRoomId());
     loggerService.debug(`Creating room with id: ${room.roomId}`);
     roomMap.set(room.roomId, room);
     return room;
@@ -26,12 +26,30 @@ export function addPlayerToRoom(player: IPlayer, room: Room) {
     loggerService.debug(`Adding player (${player.playerId}) to room (${room.roomId})`);
     room.addPlayer(player);
 
+    if (room.playerAdminId === undefined) {
+        setAdmin(player.playerId, room);
+    }
+
     room.round.playerTurn.push(player); // WIP TODO DEV
 }
 
 export function removePlayerIdToRoom(playerId: string, room: Room) {
     loggerService.debug(`Removing player (${playerId}) to room (${room.roomId})`);
     room.removePlayerId(playerId);
+
+    if (room.playerAdminId === playerId) {
+        if (room.players.length === 0) {
+            loggerService.debug(`Room (${room.roomId}) no longer has an admin or players`);
+            room.playerAdminId = undefined;
+        } else {
+            setAdmin(room.players[0].playerId, room);
+        }
+    }
+}
+
+function setAdmin(playerId: string, room: Room) {
+    loggerService.debug(`Player (${playerId}) is now admin of room (${room.roomId})`);
+    room.playerAdminId = playerId;
 }
 
 /**

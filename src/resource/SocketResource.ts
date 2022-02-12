@@ -7,9 +7,10 @@ import { Room } from '../model/Room.ts';
 import InvalidParameterValue from '../model/exception/InvalidParameterValue.ts';
 import SocketInitNotPerformed from '../model/exception/SocketInitNotPerformed.ts';
 import { getValidChatMessage } from '../core/validator/ChatMessageValidator.ts';
-import { IMessage, DrawTool, IPlayer, IDraw } from '../model/GameModel.ts';
+import { IMessage, DrawTool, IPlayer, IDraw, IRoomConfig, GameMode } from '../model/GameModel.ts';
 import { isPlayerCanDraw } from '../core/validator/DrawValidator.ts';
 import InvalidPermission from '../model/exception/InvalidPermission.ts';
+import { appRoomConfig } from '../config.ts';
 
 const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
     roomId: z.string(),
@@ -28,10 +29,15 @@ const DataDrawSchema: z.ZodSchema<IDraw> = z.object({
     color: z.string().optional(),
     lineWidth: z.number().optional()
 });
+const DataConfigSchema: z.ZodSchema<IRoomConfig> = z.object({
+    gameMode: z.nativeEnum(GameMode),
+    timeByTurn: z.number().min(appRoomConfig.minTimeByTurn).max(appRoomConfig.maxTimeByTurn),
+    maxPlayer: z.number().min(appRoomConfig.minMaxPlayer).max(appRoomConfig.maxMaxPlayer)
+});
 
 const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object({
     channel: z.nativeEnum(SocketChannel),
-    data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawSchema).optional()
+    data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawSchema).or(DataConfigSchema).optional()
 });
 
 const sockets = new Map<string, SocketUser>();
@@ -108,25 +114,27 @@ export default class SocketResource extends Drash.Resource {
 function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequest) {
     const channel: SocketChannel = message.channel;
     try {
+        loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Handle channel (${channel})`);
+
         switch (channel) {
             case SocketChannel.INIT: {
-                loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Handle channel (${SocketChannel.INIT})`);
                 onMessageInitChannel(socketUser, message);
                 break;
             }
             case SocketChannel.CHAT: {
-                loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Handle channel (${SocketChannel.CHAT})`);
                 onMessageChatChannel(socketUser, message);
                 break;
             }
             case SocketChannel.DRAW: {
-                loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Handle channel (${SocketChannel.DRAW})`);
                 onMessageDrawChannel(socketUser, message);
                 break;
             }
             case SocketChannel.INFO: {
-                loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Handle channel (${SocketChannel.INFO})`);
                 onMessageInfoChannel(socketUser, message);
+                break;
+            }
+            case SocketChannel.CONFIG: {
+                onMessageConfigChannel(socketUser, message);
                 break;
             }
             default: {
@@ -183,7 +191,7 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
         };
 
         room.addMessage(chatResponse);
-        room.getPlayersId().forEach(otherPlayerId => {
+        room.playersId.forEach(otherPlayerId => {
             const otherSocketUser = sockets.get(otherPlayerId);
             if (otherSocketUser != null) {
                 safeSend(otherSocketUser, JSON.stringify(responseChatMessage));
@@ -205,7 +213,7 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
     };
 
     room.round.addDraw(drawMessage);
-    room.getPlayersId().forEach(otherPlayerId => {
+    room.playersId.forEach(otherPlayerId => {
         const otherSocketUser = sockets.get(otherPlayerId);
         if (otherSocketUser != null) {
             safeSend(otherSocketUser, JSON.stringify(responseDraw));
@@ -226,6 +234,21 @@ function onMessageInfoChannel(socketUser: SocketUser, _message: ISocketMessageRe
     };
 
     safeSend(socketUser, JSON.stringify(responseInfo));
+}
+
+function onMessageConfigChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
+    const [player, room] = checkInitAndGetRoom(socketUser);
+    if (!room.isPlayerAdmin(player)) throw new InvalidPermission("You don't have the permission to config the room");
+
+    const roomConfig: IRoomConfig = DataConfigSchema.parse(message.data);
+    room.config = roomConfig;
+
+    const responseConfig: ISocketMessageResponse = {
+        channel: SocketChannel.CONFIG,
+        data: roomConfig
+    };
+
+    safeSend(socketUser, JSON.stringify(responseConfig));
 }
 
 function checkInitAndGetRoom(socketUser: SocketUser): [IPlayer, Room] {

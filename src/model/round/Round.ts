@@ -2,13 +2,11 @@ import { IPlayer, IDraw } from '../GameModel.ts';
 import { IDataChatRequest } from '../SocketModel.ts';
 export default abstract class Round {
 
-    #roundTimeDuration: number;
     #dateStartedDrawing: Date | null;
     #playerTurn: IPlayer[];
     #draws: IDraw[];
 
-    constructor(roundTimeDuration: number, dateStartedDrawing: Date | null, playerTurn: IPlayer[]) {
-        this.#roundTimeDuration = roundTimeDuration;
+    constructor(dateStartedDrawing: Date | null, playerTurn: IPlayer[]) {
         this.#dateStartedDrawing = dateStartedDrawing;
         this.#playerTurn = playerTurn;
         this.#draws = [];
@@ -16,10 +14,6 @@ export default abstract class Round {
 
     get dateStartedDrawing() {
         return this.#dateStartedDrawing;
-    }
-
-    get roundTimeDuration() {
-        return this.#roundTimeDuration;
     }
 
     get playerTurn() {
