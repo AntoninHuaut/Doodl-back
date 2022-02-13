@@ -43,7 +43,6 @@ export class Room {
         }
     }
 
-
     addPlayer(player: IPlayer) {
         if (!this.#players.includes(player)) {
             this.#players.push(player);
@@ -62,6 +61,14 @@ export class Room {
         this.#messages.push(message);
     }
 
+    set state(state: RoomState) {
+        this.#state = state;
+    }
+
+    get state(): RoomState {
+        return this.#state
+    }
+
     set config(config: IRoomConfig) {
         if (this.#state !== RoomState.LOBBY) throw new InvalidState("Room can only be updated in lobby");
 
@@ -77,16 +84,12 @@ export class Room {
         return this.#players;
     }
 
-    get playersId() {
-        return this.#players.map(p => p.playerId);
-    }
-
     get messages() {
         return this.#messages;
     }
 
-    get state(): RoomState {
-        return this.#state
+    get playersId() {
+        return this.#players.map(p => p.playerId);
     }
 
     get round(): Round {

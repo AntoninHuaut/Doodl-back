@@ -1,6 +1,6 @@
-import { IPlayer } from '../model/GameModel.ts';
-import { Room } from '../model/Room.ts';
-import { loggerService } from '../server.ts';
+import {IPlayer, RoomState} from '../model/GameModel.ts';
+import {Room} from '../model/Room.ts';
+import {loggerService} from '../server.ts';
 
 const ROOM_CODE_LENGTH = 8;
 const roomMap = new Map<string, Room>();
@@ -18,10 +18,6 @@ export function getRoomById(roomId: string | undefined): Room | undefined {
     return roomMap.get(roomId);
 }
 
-export function isRoomExist(roomId: string): boolean {
-    return roomMap.has(roomId);
-}
-
 export function addPlayerToRoom(player: IPlayer, room: Room) {
     loggerService.debug(`Adding player (${player.playerId}) to room (${room.roomId})`);
     room.addPlayer(player);
@@ -29,8 +25,6 @@ export function addPlayerToRoom(player: IPlayer, room: Room) {
     if (room.playerAdminId === undefined) {
         setAdmin(player.playerId, room);
     }
-
-    room.round.playerTurn.push(player); // WIP TODO DEV
 }
 
 export function removePlayerIdToRoom(playerId: string, room: Room) {
@@ -45,6 +39,11 @@ export function removePlayerIdToRoom(playerId: string, room: Room) {
             setAdmin(room.players[0].playerId, room);
         }
     }
+}
+
+export function startGame(room: Room) {
+    loggerService.debug(`Start game (${room.roomId})`);
+    room.state = RoomState.INGAME;
 }
 
 function setAdmin(playerId: string, room: Room) {
