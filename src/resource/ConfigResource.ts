@@ -1,7 +1,7 @@
-import { Drash } from "../deps.ts";
-import { appRoomConfig } from '../config.ts';
-import { GameMode } from '../model/GameModel.ts';
-import { IRoomServerConfig } from '../model/ConfigModel.ts';
+import {Drash} from "../deps.ts";
+import {appRoomConfig} from '../config.ts';
+import {GameMode} from '../model/GameModel.ts';
+import {IRoomServerConfig} from '../model/ConfigModel.ts';
 
 interface ConfigResponse {
     gameMode: GameMode[];

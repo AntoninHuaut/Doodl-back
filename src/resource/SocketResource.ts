@@ -1,12 +1,12 @@
 import {Drash, z} from "../deps.ts";
 import {
-    ISocketMessageRequest,
-    SocketChannel,
-    IDataInitRequest,
     IDataChatRequest,
+    IDataDrawResponse,
+    IDataInitRequest,
+    ISocketMessageRequest,
     ISocketMessageResponse,
-    SocketUser,
-    IDataDrawResponse
+    SocketChannel,
+    SocketUser
 } from '../model/SocketModel.ts';
 import {loggerService} from '../server.ts';
 import {createPlayer, deletePlayer} from '../core/PlayerManager.ts';
@@ -15,7 +15,7 @@ import {Room} from '../model/Room.ts';
 import InvalidParameterValue from '../model/exception/InvalidParameterValue.ts';
 import SocketInitNotPerformed from '../model/exception/SocketInitNotPerformed.ts';
 import {getValidChatMessage} from '../core/validator/ChatMessageValidator.ts';
-import {IMessage, DrawTool, IPlayer, IDraw, IRoomConfig, GameMode, RoomState, ICoordinate} from '../model/GameModel.ts';
+import {DrawTool, GameMode, ICoordinate, IDraw, IMessage, IPlayer, IRoomConfig, RoomState} from '../model/GameModel.ts';
 import {isPlayerCanDraw} from '../core/validator/DrawValidator.ts';
 import InvalidPermission from '../model/exception/InvalidPermission.ts';
 import {appRoomConfig} from '../config.ts';

@@ -1,4 +1,4 @@
-import { Drash, unilogger } from "../deps.ts";
+import {Drash, unilogger} from "../deps.ts";
 
 export default class LoggerService extends Drash.Service {
 
@@ -9,7 +9,7 @@ export default class LoggerService extends Drash.Service {
 
     constructor() {
         super();
-        this.loggers = [new unilogger.ConsoleLogger({}), new unilogger.FileLogger({ file: "app.log" })];
+        this.loggers = [new unilogger.ConsoleLogger({}), new unilogger.FileLogger({file: "app.log"})];
     }
 
     runBeforeResource(request: Drash.Request, _response: Drash.Response) {

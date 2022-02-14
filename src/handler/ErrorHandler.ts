@@ -1,6 +1,6 @@
-import { Drash, z } from "../deps.ts";
+import {Drash, z} from "../deps.ts";
 import InvalidParameterValue from '../model/exception/InvalidParameterValue.ts';
-import { loggerService } from '../server.ts';
+import {loggerService} from '../server.ts';
 
 export default class ErrorHandler extends Drash.ErrorHandler {
 

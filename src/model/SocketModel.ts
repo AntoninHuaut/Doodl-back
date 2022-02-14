@@ -1,4 +1,4 @@
-import { IPlayer, IMessage, IDraw, RoomState, IRoomConfig } from './GameModel.ts';
+import {IDraw, IMessage, IPlayer, IRoomConfig, RoomState} from './GameModel.ts';
 
 export interface SocketUser {
     socket: WebSocket;
@@ -34,6 +34,7 @@ export interface IDataInitResponse {
 export interface IDataChatRequest {
     message: string;
 }
+
 // IDataChatResponse is equals to IMessage
 
 // IDataDrawRequest = IDraw

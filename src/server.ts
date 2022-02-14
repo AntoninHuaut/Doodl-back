@@ -1,6 +1,6 @@
-import { Drash, PaladinService, ResponseTimeService, CORSService } from "./deps.ts";
+import {CORSService, Drash, PaladinService, ResponseTimeService} from "./deps.ts";
 import LoggerService from "./service/LoggerService.ts";
-import { appServerConfig } from "./config.ts";
+import {appServerConfig} from "./config.ts";
 
 import ErrorHandler from "./handler/ErrorHandler.ts";
 import HomeResource from "./resource/HomeResource.ts";

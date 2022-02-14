@@ -1,5 +1,5 @@
-import { IPlayer, IMessage } from '../../model/GameModel.ts';
-import { appRoomConfig } from '../../config.ts';
+import {IMessage, IPlayer} from '../../model/GameModel.ts';
+import {appRoomConfig} from '../../config.ts';
 
 export function getValidChatMessage(player: IPlayer, message: string): IMessage | undefined {
     if (!isValidMessage(message)) return undefined;

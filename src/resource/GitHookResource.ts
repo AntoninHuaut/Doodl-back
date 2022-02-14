@@ -1,5 +1,5 @@
-import { Drash } from "../deps.ts";
-import { loggerService } from '../server.ts';
+import {Drash} from "../deps.ts";
+import {loggerService} from '../server.ts';
 
 export default class GitHookResource extends Drash.Resource {
 
@@ -23,16 +23,16 @@ export default class GitHookResource extends Drash.Resource {
             let p;
             if (deployBack) {
                 loggerService.info(`Back Hook, deploying...`)
-                p = Deno.run({ cmd: ["./deployBack.sh"] });
+                p = Deno.run({cmd: ["./deployBack.sh"]});
             }
             if (deployFront) {
                 loggerService.info(`Front Hook, deploying...`)
-                p = Deno.run({ cmd: ["./deployFront.sh"] });
+                p = Deno.run({cmd: ["./deployFront.sh"]});
             }
 
             if (!p) return;
 
-            const { success, code, signal } = await p.status();
+            const {success, code, signal} = await p.status();
             loggerService.info(`Hook, ${success} - ${code} - ${signal}`);
         }, 100);
     }

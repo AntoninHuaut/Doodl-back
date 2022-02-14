@@ -1,6 +1,6 @@
-import { Drash } from "../deps.ts";
-import { IRoomStatus, IRoomConfig } from '../model/GameModel.ts';
-import { createRoom, getRoomById } from '../core/RoomManager.ts';
+import {Drash} from "../deps.ts";
+import {IRoomConfig, IRoomStatus} from '../model/GameModel.ts';
+import {createRoom, getRoomById} from '../core/RoomManager.ts';
 
 interface IRoomPostResponse {
     roomId: string;

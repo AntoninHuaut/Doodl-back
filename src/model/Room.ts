@@ -1,6 +1,6 @@
 import Round from './round/Round.ts';
 import ClassicRound from './round/ClassicRound.ts';
-import { IPlayer, GameMode, IRoomConfig, IRoomStatus, IMessage, RoomState } from './GameModel.ts';
+import {GameMode, IMessage, IPlayer, IRoomConfig, IRoomStatus, RoomState} from './GameModel.ts';
 import InvalidState from './exception/InvalidState.ts';
 
 export class Room {
