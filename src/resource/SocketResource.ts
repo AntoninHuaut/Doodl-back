@@ -35,7 +35,7 @@ const DataCoordinateSchema: z.ZodSchema<ICoordinate> = z.object({
 });
 const DataDrawRequestSchema: z.ZodSchema<IDraw> = z.object({
     tool: z.nativeEnum(DrawTool),
-    coordsTo: DataCoordinateSchema,
+    coordsTo: DataCoordinateSchema.optional(),
     coordsFrom: DataCoordinateSchema.optional(),
     color: z.string().optional(),
     lineWidth: z.number().optional()

@@ -1,12 +1,13 @@
-import { IPlayer, IDraw } from '../GameModel.ts';
-import { IDataChatRequest } from '../SocketModel.ts';
+import {DrawTool, IDraw, IPlayer} from '../GameModel.ts';
+import {IDataChatRequest} from '../SocketModel.ts';
+
 export default abstract class Round {
 
     #dateStartedDrawing: Date | null;
     #playerTurn: IPlayer[];
     #draws: IDraw[];
 
-    constructor(dateStartedDrawing: Date | null, playerTurn: IPlayer[]) {
+    protected constructor(dateStartedDrawing: Date | null, playerTurn: IPlayer[]) {
         this.#dateStartedDrawing = dateStartedDrawing;
         this.#playerTurn = playerTurn;
         this.#draws = [];
@@ -25,7 +26,11 @@ export default abstract class Round {
     }
 
     addDraw(draw: IDraw) {
-        this.#draws.push(draw);
+        if (draw.tool !== DrawTool.CLEAR) {
+            this.#draws.push(draw);
+        } else {
+            this.#draws.length = 0;
+        }
     }
 
     handleChatMessage(_message: IDataChatRequest, broadcastMessageFunc: () => void) {

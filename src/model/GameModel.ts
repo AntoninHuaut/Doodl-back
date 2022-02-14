@@ -29,7 +29,7 @@ export interface ICoordinate {
 
 export interface IDraw {
   tool: DrawTool;
-  coordsTo: ICoordinate;
+  coordsTo?: ICoordinate;
   coordsFrom?: ICoordinate;
   color?: string;
   lineWidth?: number;
@@ -43,7 +43,8 @@ export enum RoomState {
 export enum DrawTool {
   BRUSH = "BRUSH",
   ERASER = "ERASER",
-  FILL = "FILL"
+  FILL = "FILL",
+  CLEAR = "CLEAR"
 }
 
 export enum GameMode {
