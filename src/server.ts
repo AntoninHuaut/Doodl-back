@@ -2,11 +2,12 @@ import {CORSService, Drash, PaladinService, ResponseTimeService} from "./deps.ts
 import LoggerService from "./service/LoggerService.ts";
 import {appServerConfig} from "./config.ts";
 
+import FrontResource from "./resource/FrontResource.ts";
+import FilesResource from "./resource/FilesResource.ts";
+
 import ErrorHandler from "./handler/ErrorHandler.ts";
-import HomeResource from "./resource/HomeResource.ts";
 import GitHookResource from "./resource/GitHookResource.ts";
 import ConfigResource from "./resource/ConfigResource.ts";
-import FilesResource from "./resource/FilesResource.ts";
 import RoomResource from "./resource/RoomResource.ts";
 import SocketResource from "./resource/SocketResource.ts";
 
@@ -24,10 +25,10 @@ export const server = new Drash.Server({
         new CORSService()
     ],
     resources: [
+        FrontResource, // MUST BE THE FIRST
+        FilesResource,
         ConfigResource,
         GitHookResource,
-        FilesResource,
-        HomeResource,
         RoomResource,
         SocketResource
     ],
