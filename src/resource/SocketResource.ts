@@ -15,7 +15,7 @@ import {Room} from '../model/Room.ts';
 import InvalidParameterValue from '../model/exception/InvalidParameterValue.ts';
 import SocketInitNotPerformed from '../model/exception/SocketInitNotPerformed.ts';
 import {getValidChatMessage} from '../core/validator/ChatMessageValidator.ts';
-import {IMessage, DrawTool, IPlayer, IDraw, IRoomConfig, GameMode, RoomState} from '../model/GameModel.ts';
+import {IMessage, DrawTool, IPlayer, IDraw, IRoomConfig, GameMode, RoomState, ICoordinate} from '../model/GameModel.ts';
 import {isPlayerCanDraw} from '../core/validator/DrawValidator.ts';
 import InvalidPermission from '../model/exception/InvalidPermission.ts';
 import {appRoomConfig} from '../config.ts';
@@ -29,12 +29,14 @@ const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
 const DataChatRequestSchema: z.ZodSchema<IDataChatRequest> = z.object({
     message: z.string()
 });
+const DataCoordinateSchema: z.ZodSchema<ICoordinate> = z.object({
+    x: z.number(),
+    y: z.number()
+});
 const DataDrawRequestSchema: z.ZodSchema<IDraw> = z.object({
     tool: z.nativeEnum(DrawTool),
-    coords: z.object({
-        x: z.number(),
-        y: z.number()
-    }),
+    coordsTo: DataCoordinateSchema,
+    coordsFrom: DataCoordinateSchema.optional(),
     color: z.string().optional(),
     lineWidth: z.number().optional()
 });

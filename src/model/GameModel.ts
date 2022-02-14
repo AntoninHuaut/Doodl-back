@@ -22,9 +22,15 @@ export interface IMessage {
   timestamp: Date;
 }
 
+export interface ICoordinate {
+  x: number;
+  y: number;
+}
+
 export interface IDraw {
   tool: DrawTool;
-  coords: { x: number, y: number };
+  coordsTo: ICoordinate;
+  coordsFrom?: ICoordinate;
   color?: string;
   lineWidth?: number;
 }
