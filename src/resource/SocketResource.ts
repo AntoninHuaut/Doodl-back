@@ -227,6 +227,8 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
 
     room.round.addDraw(drawMessage);
     room.playersId.forEach(otherPlayerId => {
+        if (otherPlayerId == socketUser.socketUUID) return;
+
         const otherSocketUser = sockets.get(otherPlayerId);
         if (otherSocketUser != null) {
             safeSend(otherSocketUser, JSON.stringify(responseDraw));
