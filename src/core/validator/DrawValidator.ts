@@ -1,6 +1,7 @@
-import { IPlayer } from '../../model/GameModel.ts';
-import { Room } from '../../model/Room.ts';
+import {IPlayer} from '../../model/GameModel.ts';
+import {Room} from '../../model/Room.ts';
 
 export function isPlayerCanDraw(player: IPlayer, room: Room): boolean {
-    return room.round?.canPlayerDraw(player);
+    return true; // TODO TEST WIP
+    // return room.round?.canPlayerDraw(player);
 }

@@ -1,40 +1,52 @@
 export interface IRoomConfig {
-  gameMode: string;
-  timeByTurn: number;
-  maxPlayer: number;
+    gameMode: GameMode;
+    timeByTurn: number;
+    maxPlayer: number;
 }
 
 export interface IPlayer {
-  name: string;
-  imgUrl: string;
-  playerId: string;
+    name: string;
+    imgUrl: string;
+    playerId: string;
 }
 
 export interface IRoomStatus {
-  isPlaying: boolean;
-  playerList: IPlayer[];
-  playerTurn: IPlayer[];
+    isPlaying: boolean;
+    playerList: IPlayer[];
+    playerTurn: IPlayer[];
 }
 
 export interface IMessage {
-  author: IPlayer;
-  message: string;
-  timestamp: Date;
+    author: IPlayer;
+    message: string;
+    timestamp: Date;
+}
+
+export interface ICoordinate {
+    x: number;
+    y: number;
 }
 
 export interface IDraw {
-  tool: DrawTool;
-  coords: { x: number, y: number };
-  color?: string;
-  lineWidth?: number;
+    tool: DrawTool;
+    coordsTo?: ICoordinate;
+    coordsFrom?: ICoordinate;
+    color?: string;
+    lineWidth?: number;
+}
+
+export enum RoomState {
+    LOBBY = "LOBBY",
+    INGAME = "INGAME"
 }
 
 export enum DrawTool {
-  BRUSH = "BRUSH",
-  ERASER = "ERASER",
-  FILL = "FILL"
+    BRUSH = "BRUSH",
+    ERASER = "ERASER",
+    FILL = "FILL",
+    CLEAR = "CLEAR"
 }
 
 export enum GameMode {
-  CLASSIC = "CLASSIC",
+    CLASSIC = "CLASSIC",
 }

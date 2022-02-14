@@ -1,6 +1,7 @@
-import { IAppConfig, IServerConfig, IRoomServerConfig } from "./model/ConfigModel.ts";
+import {IAppConfig, IRoomServerConfig, IServerConfig} from "./model/ConfigModel.ts";
 
-import configRaw from "../config.json"  assert { type: "json" };
+import configRaw from "../config.json" assert {type: "json"};
+
 const globalConfig: IAppConfig = configRaw;
-export const serverConfig: IServerConfig = globalConfig.server;
-export const roomConfig: IRoomServerConfig = globalConfig.room;
+export const appServerConfig: IServerConfig = globalConfig.server;
+export const appRoomConfig: IRoomServerConfig = globalConfig.room;

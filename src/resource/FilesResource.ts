@@ -1,4 +1,4 @@
-import { Drash } from "../deps.ts";
+import {Drash} from "../deps.ts";
 
 export default class FilesResource extends Drash.Resource {
 

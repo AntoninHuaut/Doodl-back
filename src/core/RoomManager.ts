@@ -1,12 +1,12 @@
-import { GameMode, IPlayer } from '../model/GameModel.ts';
-import { Room } from '../model/Room.ts';
-import { loggerService } from '../server.ts';
+import {IPlayer, RoomState} from '../model/GameModel.ts';
+import {Room} from '../model/Room.ts';
+import {loggerService} from '../server.ts';
 
 const ROOM_CODE_LENGTH = 8;
 const roomMap = new Map<string, Room>();
 
-export function createRoom(gameMode: GameMode, maxPlayer: number, roundTimeDuration: number): Room {
-    const room = new Room(generateRoomId(), gameMode, maxPlayer, roundTimeDuration);
+export function createRoom(): Room {
+    const room = new Room(generateRoomId());
     loggerService.debug(`Creating room with id: ${room.roomId}`);
     roomMap.set(room.roomId, room);
     return room;
@@ -18,20 +18,37 @@ export function getRoomById(roomId: string | undefined): Room | undefined {
     return roomMap.get(roomId);
 }
 
-export function isRoomExist(roomId: string): boolean {
-    return roomMap.has(roomId);
-}
-
 export function addPlayerToRoom(player: IPlayer, room: Room) {
     loggerService.debug(`Adding player (${player.playerId}) to room (${room.roomId})`);
     room.addPlayer(player);
 
-    room.round.playerTurn.push(player); // WIP TODO DEV
+    if (room.playerAdminId === undefined) {
+        setAdmin(player.playerId, room);
+    }
 }
 
 export function removePlayerIdToRoom(playerId: string, room: Room) {
     loggerService.debug(`Removing player (${playerId}) to room (${room.roomId})`);
     room.removePlayerId(playerId);
+
+    if (room.playerAdminId === playerId) {
+        if (room.players.length === 0) {
+            loggerService.debug(`Room (${room.roomId}) no longer has an admin or players`);
+            room.playerAdminId = undefined;
+        } else {
+            setAdmin(room.players[0].playerId, room);
+        }
+    }
+}
+
+export function startGame(room: Room) {
+    loggerService.debug(`Start game (${room.roomId})`);
+    room.state = RoomState.INGAME;
+}
+
+function setAdmin(playerId: string, room: Room) {
+    loggerService.debug(`Player (${playerId}) is now admin of room (${room.roomId})`);
+    room.playerAdminId = playerId;
 }
 
 /**

@@ -1,7 +1,7 @@
-import { Drash } from "../deps.ts";
-import { roomConfig } from '../config.ts';
-import { GameMode } from '../model/GameModel.ts';
-import { IRoomServerConfig } from '../model/ConfigModel.ts';
+import {Drash} from "../deps.ts";
+import {appRoomConfig} from '../config.ts';
+import {GameMode} from '../model/GameModel.ts';
+import {IRoomServerConfig} from '../model/ConfigModel.ts';
 
 interface ConfigResponse {
     gameMode: GameMode[];
@@ -17,7 +17,7 @@ export default class ConfigResource extends Drash.Resource {
     public GET(_request: Drash.Request, response: Drash.Response) {
         const jsonResponse: ConfigResponse = {
             gameMode: Object.keys(GameMode) as GameMode[],
-            roomServerConfig: roomConfig
+            roomServerConfig: appRoomConfig
         }
         return response.json(jsonResponse);
     }

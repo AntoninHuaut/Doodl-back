@@ -1,15 +1,25 @@
-import { Drash, z } from "../deps.ts";
-import { ISocketMessageRequest, SocketChannel, IDataInitRequest, IDataChatRequest, ISocketMessageResponse, SocketUser, IDataDrawResponse } from '../model/SocketModel.ts';
-import { loggerService } from '../server.ts';
-import { createPlayer, deletePlayer } from '../core/PlayerManager.ts';
-import { getRoomById } from '../core/RoomManager.ts';
-import { Room } from '../model/Room.ts';
+import {Drash, z} from "../deps.ts";
+import {
+    IDataChatRequest,
+    IDataDrawResponse,
+    IDataInitRequest,
+    ISocketMessageRequest,
+    ISocketMessageResponse,
+    SocketChannel,
+    SocketUser
+} from '../model/SocketModel.ts';
+import {loggerService} from '../server.ts';
+import {createPlayer, deletePlayer} from '../core/PlayerManager.ts';
+import {getRoomById, startGame} from '../core/RoomManager.ts';
+import {Room} from '../model/Room.ts';
 import InvalidParameterValue from '../model/exception/InvalidParameterValue.ts';
 import SocketInitNotPerformed from '../model/exception/SocketInitNotPerformed.ts';
-import { getValidChatMessage } from '../core/validator/ChatMessageValidator.ts';
-import { IMessage, DrawTool, IPlayer, IDraw } from '../model/GameModel.ts';
-import { isPlayerCanDraw } from '../core/validator/DrawValidator.ts';
+import {getValidChatMessage} from '../core/validator/ChatMessageValidator.ts';
+import {DrawTool, GameMode, ICoordinate, IDraw, IMessage, IPlayer, IRoomConfig, RoomState} from '../model/GameModel.ts';
+import {isPlayerCanDraw} from '../core/validator/DrawValidator.ts';
 import InvalidPermission from '../model/exception/InvalidPermission.ts';
+import {appRoomConfig} from '../config.ts';
+import InvalidState from "../model/exception/InvalidState.ts";
 
 const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
     roomId: z.string(),
@@ -19,19 +29,26 @@ const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
 const DataChatRequestSchema: z.ZodSchema<IDataChatRequest> = z.object({
     message: z.string()
 });
-const DataDrawSchema: z.ZodSchema<IDraw> = z.object({
+const DataCoordinateSchema: z.ZodSchema<ICoordinate> = z.object({
+    x: z.number(),
+    y: z.number()
+});
+const DataDrawRequestSchema: z.ZodSchema<IDraw> = z.object({
     tool: z.nativeEnum(DrawTool),
-    coords: z.object({
-        x: z.number(),
-        y: z.number()
-    }),
+    coordsTo: DataCoordinateSchema.optional(),
+    coordsFrom: DataCoordinateSchema.optional(),
     color: z.string().optional(),
     lineWidth: z.number().optional()
+});
+const DataStartRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
+    gameMode: z.nativeEnum(GameMode),
+    timeByTurn: z.number().min(appRoomConfig.minTimeByTurn).max(appRoomConfig.maxTimeByTurn),
+    maxPlayer: z.number().min(appRoomConfig.minMaxPlayer).max(appRoomConfig.maxMaxPlayer)
 });
 
 const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object({
     channel: z.nativeEnum(SocketChannel),
-    data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawSchema)
+    data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawRequestSchema).or(DataStartRequestSchema).optional()
 });
 
 const sockets = new Map<string, SocketUser>();
@@ -44,7 +61,7 @@ export default class SocketResource extends Drash.Resource {
             request.headers.get("connection")!.toLowerCase().includes("upgrade") &&
             request.headers.get("upgrade")!.toLowerCase() === "websocket") {
             try {
-                const { socket, response: socketResponse } = Deno.upgradeWebSocket(request);
+                const {socket, response: socketResponse} = Deno.upgradeWebSocket(request);
                 this.#addEventHandlers(socket);
                 return response.upgrade(socketResponse);
             } catch (error) {
@@ -58,17 +75,18 @@ export default class SocketResource extends Drash.Resource {
     }
 
     #addEventHandlers(socket: WebSocket): void {
-        let socketUser: SocketUser | null;
+        const socketUUID: string = crypto.randomUUID();
 
         socket.onopen = () => {
-            if (socketUser != null) return;
+            if (sockets.has(socketUUID)) return;
 
-            socketUser = { socket: socket, socketUUID: crypto.randomUUID() };
-            sockets.set(socketUser.socketUUID, socketUser);
+            const socketUser = {socket: socket, socketUUID: socketUUID};
+            sockets.set(socketUUID, socketUser);
             loggerService.debug(`WebSocket ${socketUser.socketUUID} - Connection opened`);
         };
 
         socket.onmessage = (e: MessageEvent) => {
+            const socketUser: SocketUser | undefined = sockets.get(socketUUID);
             if (socketUser == null) return;
 
             try {
@@ -83,21 +101,22 @@ export default class SocketResource extends Drash.Resource {
                     errorResponse = error.name;
                 }
 
-                return safeSend(socketUser, JSON.stringify({ error: errorResponse }));
+                return safeSend(socketUser, JSON.stringify({error: errorResponse}));
             }
         };
 
         socket.onclose = () => {
+            const socketUser: SocketUser | undefined = sockets.get(socketUUID);
             if (socketUser == null) return;
 
             loggerService.debug(`WebSocket ${socketUser.socketUUID} - Connection closed`);
             deletePlayer(socketUser);
             loggerService.debug(`Removing socket (${socketUser.socketUUID})`);
             sockets.delete(socketUser.socketUUID);
-            socketUser = null;
         };
 
         socket.onerror = (e: Event) => {
+            const socketUser: SocketUser | undefined = sockets.get(socketUUID);
             if (socketUser == null) return;
 
             loggerService.error(`WebSocket ${socketUser.socketUUID} - WebSocket error: ${JSON.stringify(e, null, 2)}`);
@@ -108,25 +127,32 @@ export default class SocketResource extends Drash.Resource {
 function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequest) {
     const channel: SocketChannel = message.channel;
     try {
+        loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Handle channel (${channel})`);
+
         switch (channel) {
             case SocketChannel.INIT: {
-                loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Handle channel (${SocketChannel.INIT})`);
                 onMessageInitChannel(socketUser, message);
                 break;
             }
             case SocketChannel.CHAT: {
-                loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Handle channel (${SocketChannel.CHAT})`);
                 onMessageChatChannel(socketUser, message);
                 break;
             }
             case SocketChannel.DRAW: {
-                loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Handle channel (${SocketChannel.DRAW})`);
                 onMessageDrawChannel(socketUser, message);
+                break;
+            }
+            case SocketChannel.INFO: {
+                onMessageInfoChannel(socketUser, message);
+                break;
+            }
+            case SocketChannel.START: {
+                onMessageStartChannel(socketUser, message);
                 break;
             }
             default: {
                 loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Invalid channel (${channel})`);
-                safeSend(socketUser, JSON.stringify({ error: "Invalid channel" }));
+                safeSend(socketUser, JSON.stringify({error: "Invalid channel"}));
                 break;
             }
         }
@@ -139,7 +165,7 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
             errorResponse = error.message;
         }
 
-        safeSend(socketUser, JSON.stringify({ error: errorResponse }));
+        safeSend(socketUser, JSON.stringify({error: errorResponse}));
     }
 }
 
@@ -178,7 +204,7 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
         };
 
         room.addMessage(chatResponse);
-        room.getPlayersId().forEach(otherPlayerId => {
+        room.playersId.forEach(otherPlayerId => {
             const otherSocketUser = sockets.get(otherPlayerId);
             if (otherSocketUser != null) {
                 safeSend(otherSocketUser, JSON.stringify(responseChatMessage));
@@ -191,21 +217,54 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
     const [player, room] = checkInitAndGetRoom(socketUser);
     if (!isPlayerCanDraw(player, room)) throw new InvalidPermission("You don't have the permission to draw");
 
-    const drawMessage: IDraw = DataDrawSchema.parse(message.data);
-    const drawMessageEnhance: IDataDrawResponse = { ...drawMessage, draftsman: player };
+    const drawMessage: IDraw = DataDrawRequestSchema.parse(message.data);
+    const drawMessageEnhance: IDataDrawResponse = {...drawMessage, draftsman: player};
 
-    const responseDrawMessage: ISocketMessageResponse = {
+    const responseDraw: ISocketMessageResponse = {
         channel: SocketChannel.DRAW,
         data: drawMessageEnhance
     };
 
     room.round.addDraw(drawMessage);
-    room.getPlayersId().forEach(otherPlayerId => {
+    room.playersId.forEach(otherPlayerId => {
+        if (otherPlayerId == socketUser.socketUUID) return;
+
         const otherSocketUser = sockets.get(otherPlayerId);
         if (otherSocketUser != null) {
-            safeSend(otherSocketUser, JSON.stringify(responseDrawMessage));
+            safeSend(otherSocketUser, JSON.stringify(responseDraw));
         }
     });
+}
+
+function onMessageInfoChannel(socketUser: SocketUser, _message: ISocketMessageRequest) {
+    const [_player, room] = checkInitAndGetRoom(socketUser);
+    const responseInfo: ISocketMessageResponse = {
+        channel: SocketChannel.INFO,
+        data: {
+            roomState: room.state,
+            playerList: room.players,
+            roomConfig: room.config
+        }
+    };
+
+    safeSend(socketUser, JSON.stringify(responseInfo));
+}
+
+function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
+    const [player, room] = checkInitAndGetRoom(socketUser);
+    if (!room.isPlayerAdmin(player)) throw new InvalidPermission("You don't have the permission to start the room");
+    if (room.state !== RoomState.LOBBY) throw new InvalidState("The room must be in the LOBBY state");
+
+    const roomConfig: IRoomConfig = DataStartRequestSchema.parse(message.data);
+    room.config = roomConfig;
+
+    const responseStart: ISocketMessageResponse = {
+        channel: SocketChannel.START,
+        data: roomConfig
+    };
+
+    startGame(room);
+    safeSend(socketUser, JSON.stringify(responseStart));
 }
 
 function checkInitAndGetRoom(socketUser: SocketUser): [IPlayer, Room] {

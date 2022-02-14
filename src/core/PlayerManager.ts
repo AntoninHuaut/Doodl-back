@@ -1,8 +1,8 @@
-import { IPlayer } from '../model/GameModel.ts';
-import { IDataInitRequest, SocketUser } from '../model/SocketModel.ts';
-import { getRoomById, addPlayerToRoom, removePlayerIdToRoom } from './RoomManager.ts';
+import {IPlayer} from '../model/GameModel.ts';
+import {IDataInitRequest, SocketUser} from '../model/SocketModel.ts';
+import {addPlayerToRoom, getRoomById, removePlayerIdToRoom} from './RoomManager.ts';
 import InvalidParameterValue from '../model/exception/InvalidParameterValue.ts';
-import { Room } from '../model/Room.ts';
+import {Room} from '../model/Room.ts';
 
 export function createPlayer(socketUser: SocketUser, dataInit: IDataInitRequest): IPlayer {
     const roomId = dataInit.roomId;
