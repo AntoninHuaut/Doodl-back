@@ -77,50 +77,59 @@ export default class SocketResource extends Drash.Resource {
     #addEventHandlers(socket: WebSocket): void {
         const socketUUID: string = crypto.randomUUID();
 
-        socket.onopen = () => {
-            if (sockets.has(socketUUID)) return;
+        try {
+            socket.onopen = () => {
+                if (sockets.has(socketUUID)) return;
 
-            const socketUser = {socket: socket, socketUUID: socketUUID};
-            sockets.set(socketUUID, socketUser);
-            loggerService.debug(`WebSocket ${socketUser.socketUUID} - Connection opened`);
-        };
+                const socketUser = {socket: socket, socketUUID: socketUUID};
+                sockets.set(socketUUID, socketUser);
+                loggerService.debug(`WebSocket ${socketUser.socketUUID} - Connection opened`);
+            };
 
-        socket.onmessage = (e: MessageEvent) => {
-            const socketUser: SocketUser | undefined = sockets.get(socketUUID);
-            if (socketUser == null) return;
+            socket.onmessage = (e: MessageEvent) => {
+                const socketUser: SocketUser | undefined = sockets.get(socketUUID);
+                if (socketUser == null) return;
 
-            try {
-                const jsonRequest = SocketMessageRequestSchema.parse(JSON.parse(e.data));
-                handleSocketMessage(socketUser, jsonRequest);
-            } catch (error) {
-                let errorResponse: z.ZodIssue[] | string;
+                try {
+                    const jsonRequest = SocketMessageRequestSchema.parse(JSON.parse(e.data));
+                    handleSocketMessage(socketUser, jsonRequest);
+                } catch (error) {
+                    let errorResponse: z.ZodIssue[] | string;
 
-                if (error instanceof z.ZodError) {
-                    errorResponse = error.issues;
-                } else {
-                    errorResponse = error.name;
+                    if (error instanceof z.ZodError) {
+                        errorResponse = error.issues;
+                    } else {
+                        errorResponse = error.name;
+                    }
+
+                    return safeSend(socketUser, JSON.stringify({error: errorResponse}));
                 }
+            };
 
-                return safeSend(socketUser, JSON.stringify({error: errorResponse}));
+            socket.onclose = () => {
+                const socketUser: SocketUser | undefined = sockets.get(socketUUID);
+                if (socketUser == null) return;
+
+                loggerService.debug(`WebSocket ${socketUser.socketUUID} - Connection closed`);
+                deletePlayer(socketUser);
+                loggerService.debug(`Removing socket (${socketUser.socketUUID})`);
+                sockets.delete(socketUser.socketUUID);
+            };
+
+            socket.onerror = (e: Event | ErrorEvent) => {
+                const socketUser: SocketUser | undefined = sockets.get(socketUUID);
+                if (socketUser == null) return;
+
+                const errorStack = e instanceof ErrorEvent ? e.error.stack : e;
+                loggerService.error(`WebSocket ${socketUser.socketUUID} - WebSocket error: ${
+                    JSON.stringify(errorStack, null, 2)
+                }`);
             }
-        };
-
-        socket.onclose = () => {
-            const socketUser: SocketUser | undefined = sockets.get(socketUUID);
-            if (socketUser == null) return;
-
-            loggerService.debug(`WebSocket ${socketUser.socketUUID} - Connection closed`);
-            deletePlayer(socketUser);
-            loggerService.debug(`Removing socket (${socketUser.socketUUID})`);
-            sockets.delete(socketUser.socketUUID);
-        };
-
-        socket.onerror = (e: Event) => {
-            const socketUser: SocketUser | undefined = sockets.get(socketUUID);
-            if (socketUser == null) return;
-
-            loggerService.error(`WebSocket ${socketUser.socketUUID} - WebSocket error: ${JSON.stringify(e, null, 2)}`);
-        };
+        } catch (error) {
+            loggerService.error(`WIP WebSocket ${socketUUID ?? 'Unknown'} - Error: ${
+                JSON.stringify(error.stack, null, 2)
+            }`);
+        }
     }
 }
 
