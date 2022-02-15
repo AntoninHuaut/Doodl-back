@@ -53,6 +53,8 @@ export interface IDataInfoResponse {
 // IDataStartResponse = Not stated (IRoomConfig tmp) // TODO
 
 export enum SocketChannel {
+    PING = "PING",
+    PONG = "PONG",
     INIT = "INIT",
     CHAT = "CHAT",
     DRAW = "DRAW",

@@ -146,6 +146,13 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
         loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Handle channel (${channel})`);
 
         switch (channel) {
+            case SocketChannel.PING: {
+                safeSend(socketUser, JSON.stringify({channel: SocketChannel.PONG}));
+                break;
+            }
+            case SocketChannel.PONG: {
+                break;
+            }
             case SocketChannel.INIT: {
                 onMessageInitChannel(socketUser, message);
                 break;
