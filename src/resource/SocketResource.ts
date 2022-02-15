@@ -120,7 +120,14 @@ export default class SocketResource extends Drash.Resource {
                 const socketUser: SocketUser | undefined = sockets.get(socketUUID);
                 if (socketUser == null) return;
 
-                const errorStack = e instanceof ErrorEvent ? e.error.stack : e;
+                const errorStack = e instanceof ErrorEvent ? {
+                    message: e.message ?? "Unknown message",
+                    filename: e.filename ?? "Unknown filename",
+                    lineno: e.lineno ?? "Unknown lineno",
+                    colno: e.colno ?? "Unknown colno",
+                    error: e.error ?? "Unknown error",
+                    stack: e.error?.stack ?? "Unknown error.stack"
+                } : e;
                 loggerService.error(`WebSocket ${socketUser.socketUUID} - WebSocket error: ${
                     JSON.stringify(errorStack, null, 2)
                 }`);
