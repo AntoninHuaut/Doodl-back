@@ -103,7 +103,7 @@ export default class GameSocketResource extends WSResource {
                         errorResponse = error.name;
                     }
 
-                    return safeSend(socketUser, JSON.stringify({error: errorResponse}));
+                    safeSend(socketUser, JSON.stringify({error: errorResponse}));
                 }
             };
 
@@ -121,20 +121,12 @@ export default class GameSocketResource extends WSResource {
                 const socketUser: SocketUser | undefined = sockets.get(socketUUID);
                 if (socketUser == null) return;
 
-                const errorStack = e instanceof ErrorEvent ? {
-                    message: e.message ?? "Unknown message",
-                    filename: e.filename ?? "Unknown filename",
-                    lineno: e.lineno ?? "Unknown lineno",
-                    colno: e.colno ?? "Unknown colno",
-                    error: e.error ?? "Unknown error",
-                    stack: e.error?.stack ?? "Unknown error.stack"
-                } : e;
                 loggerService.error(`WebSocket ${socketUser.socketUUID} - WebSocket error: ${
-                    JSON.stringify(errorStack, null, 2)
+                    JSON.stringify(this.getErrorToPrint(e), null, 2)
                 }`);
             }
         } catch (error) {
-            loggerService.error(`WIP WebSocket ${socketUUID ?? 'Unknown'} - Error: ${
+            loggerService.error(`WebSocket ${socketUUID ?? 'Unknown'} - Error: ${
                 JSON.stringify(error.stack, null, 2)
             }`);
         }

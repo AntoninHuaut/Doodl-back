@@ -38,4 +38,15 @@ export default abstract class WSResource extends Drash.Resource {
     }
 
     protected abstract addEventHandlers(socket: WebSocket): void;
+
+    protected getErrorToPrint(e: Event | ErrorEvent) {
+        return e instanceof ErrorEvent ? {
+            message: e.message ?? "Unknown message",
+            filename: e.filename ?? "Unknown filename",
+            lineno: e.lineno ?? "Unknown lineno",
+            colno: e.colno ?? "Unknown colno",
+            error: e.error ?? "Unknown error",
+            stack: e.error?.stack ?? "Unknown error.stack"
+        } : e;
+    }
 }

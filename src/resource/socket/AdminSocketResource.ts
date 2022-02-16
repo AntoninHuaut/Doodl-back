@@ -1,8 +1,18 @@
 import {loggerService} from '../../server.ts';
 import WSResource from "./WSResource.ts";
-import {AdminSocketChannel, IAdminRoomInfo, IAdminSocketConnectResponse} from "../../model/AdminSocketModel.ts";
+import {
+    AdminSocketChannel,
+    IAdminRoomInfo,
+    IAdminSocketConnectResponse,
+    IAdminSocketMessage
+} from "../../model/AdminSocketModel.ts";
 import {getRoomList} from "../../core/RoomManager.ts";
 import {getSocketsCount} from "./GameSocketResource.ts";
+import {z} from "https://deno.land/x/zod@v3.11.6/index.ts";
+
+const AdminSocketMessageRequestSchema: z.ZodSchema<IAdminSocketMessage> = z.object({
+    channel: z.nativeEnum(AdminSocketChannel)
+});
 
 export default class AdminSocketResource extends WSResource {
 
@@ -16,25 +26,70 @@ export default class AdminSocketResource extends WSResource {
     protected addEventHandlers(socket: WebSocket): void {
         try {
             socket.onopen = () => {
-                loggerService.debug(`Open`);
+                loggerService.debug(`WebSocket Admin - Connection opened`);
                 sendGlobalData(socket);
             };
 
             socket.onmessage = (e: MessageEvent) => {
-                loggerService.debug(`Message: ${e.data}`);
-                socket.send(e.data);
+                try {
+                    const jsonRequest = AdminSocketMessageRequestSchema.parse(JSON.parse(e.data));
+                    handleAdminSocketMessage(socket, jsonRequest);
+                } catch (error) {
+                    let errorResponse: z.ZodIssue[] | string;
+
+                    if (error instanceof z.ZodError) {
+                        errorResponse = error.issues;
+                    } else {
+                        errorResponse = error.name;
+                    }
+
+                    return safeSend(socket, JSON.stringify({error: errorResponse}));
+                }
             };
 
             socket.onclose = () => {
-                loggerService.debug(`Close`);
+                loggerService.debug(`WebSocket Admin - Connection closed`);
             };
 
             socket.onerror = (e: Event | ErrorEvent) => {
-                loggerService.debug(`Error: ${JSON.stringify(e)}`);
+                loggerService.error(`WebSocket Admin - Error handled: ${
+                    JSON.stringify(this.getErrorToPrint(e), null, 2)
+                }`);
             }
         } catch (error) {
-            loggerService.error(`Error: ${JSON.stringify(error.stack)}`);
+            loggerService.error(`WebSocket Admin - Error: ${
+                JSON.stringify(error.stack, null, 2)
+            }`);
         }
+    }
+}
+
+function handleAdminSocketMessage(socket: WebSocket, message: IAdminSocketMessage) {
+    const channel: AdminSocketChannel = message.channel;
+    try {
+        loggerService.debug(`WebSocket Admin - Handle channel (${channel})`);
+
+        switch (channel) {
+            case AdminSocketChannel.GLOBAL_DATA: {
+                sendGlobalData(socket);
+                break;
+            }
+            default: {
+                loggerService.debug(`WebSocket Admin - Invalid channel (${channel})`);
+                safeSend(socket, JSON.stringify({error: "Invalid channel"}));
+                break;
+            }
+        }
+    } catch (error) {
+        let errorResponse: z.ZodIssue[] | string;
+
+        if (error instanceof z.ZodError) {
+            errorResponse = error.issues;
+        } else {
+            errorResponse = error.message;
+        }
+
+        safeSend(socket, JSON.stringify({error: errorResponse}));
     }
 }
 

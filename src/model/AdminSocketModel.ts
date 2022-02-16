@@ -1,10 +1,10 @@
 import {IPlayer} from "./GameModel.ts";
 
-export interface ISocketMessage {
+export interface IAdminSocketMessage {
     channel: AdminSocketChannel;
 }
 
-export interface IAdminSocketConnectResponse extends ISocketMessage {
+export interface IAdminSocketConnectResponse extends IAdminSocketMessage {
     data: {
         roomCount: number;
         wsCount: number;
