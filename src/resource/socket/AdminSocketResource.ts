@@ -17,23 +17,7 @@ export default class AdminSocketResource extends WSResource {
         try {
             socket.onopen = () => {
                 loggerService.debug(`Open`);
-                const roomList: IAdminRoomInfo[] = getRoomList().map(room => {
-                    return {
-                        roomId: room.roomId,
-                        playerList: room.players
-                    }
-                });
-
-                const connectResponse: IAdminSocketConnectResponse = {
-                    channel: AdminSocketChannel.CONNECT,
-                    data: {
-                        roomCount: roomList.length,
-                        wsCount: getSocketsCount(),
-                        roomList: roomList
-                    }
-                };
-
-                safeSend(socket, JSON.stringify(connectResponse));
+                sendGlobalData(socket);
             };
 
             socket.onmessage = (e: MessageEvent) => {
@@ -52,6 +36,26 @@ export default class AdminSocketResource extends WSResource {
             loggerService.error(`Error: ${JSON.stringify(error.stack)}`);
         }
     }
+}
+
+function sendGlobalData(socket: WebSocket) {
+    const roomList: IAdminRoomInfo[] = getRoomList().map(room => {
+        return {
+            roomId: room.roomId,
+            playerList: room.players
+        }
+    });
+
+    const connectResponse: IAdminSocketConnectResponse = {
+        channel: AdminSocketChannel.GLOBAL_DATA,
+        data: {
+            roomCount: roomList.length,
+            wsCount: getSocketsCount(),
+            roomList: roomList
+        }
+    };
+
+    safeSend(socket, JSON.stringify(connectResponse));
 }
 
 function safeSend(socket: WebSocket, message: string) {

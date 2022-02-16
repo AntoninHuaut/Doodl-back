@@ -18,5 +18,5 @@ export interface IAdminRoomInfo {
 }
 
 export enum AdminSocketChannel {
-    CONNECT = "CONNECT"
+    GLOBAL_DATA = "GLOBAL_DATA"
 }
