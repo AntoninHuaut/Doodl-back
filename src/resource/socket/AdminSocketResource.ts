@@ -31,20 +31,10 @@ export default class AdminSocketResource extends WSResource {
             };
 
             socket.onmessage = (e: MessageEvent) => {
-                try {
+                this.safeOnSocketMessage(socket, () => {
                     const jsonRequest = AdminSocketMessageRequestSchema.parse(JSON.parse(e.data));
                     handleAdminSocketMessage(socket, jsonRequest);
-                } catch (error) {
-                    let errorResponse: z.ZodIssue[] | string;
-
-                    if (error instanceof z.ZodError) {
-                        errorResponse = error.issues;
-                    } else {
-                        errorResponse = error.name;
-                    }
-
-                    return safeSend(socket, JSON.stringify({error: errorResponse}));
-                }
+                }, safeSend);
             };
 
             socket.onclose = () => {

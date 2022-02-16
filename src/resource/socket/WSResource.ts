@@ -1,6 +1,4 @@
-import {Drash} from "../../deps.ts";
-import {SocketUser} from "../../model/GameSocketModel.ts";
-import {loggerService} from "../../server.ts";
+import {Drash, z} from "../../deps.ts";
 
 export default abstract class WSResource extends Drash.Resource {
 
@@ -35,6 +33,24 @@ export default abstract class WSResource extends Drash.Resource {
         return response.json({
             error: "Invalid headers"
         });
+    }
+
+    safeOnSocketMessage<T>(genSocket: T,
+                           parseSocketMessage: () => void,
+                           sendMessage: (socket: T, msg: string) => void) {
+        try {
+            parseSocketMessage();
+        } catch (error) {
+            let errorResponse: z.ZodIssue[] | string;
+
+            if (error instanceof z.ZodError) {
+                errorResponse = error.issues;
+            } else {
+                errorResponse = error.name;
+            }
+
+            sendMessage(genSocket, JSON.stringify({error: errorResponse}));
+        }
     }
 
     protected abstract addEventHandlers(socket: WebSocket): void;

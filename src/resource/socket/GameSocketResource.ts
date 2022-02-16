@@ -91,20 +91,10 @@ export default class GameSocketResource extends WSResource {
                 const socketUser: SocketUser | undefined = sockets.get(socketUUID);
                 if (socketUser == null) return;
 
-                try {
+                this.safeOnSocketMessage(socketUser, () => {
                     const jsonRequest = SocketMessageRequestSchema.parse(JSON.parse(e.data));
                     handleSocketMessage(socketUser, jsonRequest);
-                } catch (error) {
-                    let errorResponse: z.ZodIssue[] | string;
-
-                    if (error instanceof z.ZodError) {
-                        errorResponse = error.issues;
-                    } else {
-                        errorResponse = error.name;
-                    }
-
-                    safeSend(socketUser, JSON.stringify({error: errorResponse}));
-                }
+                }, safeSend);
             };
 
             socket.onclose = () => {
