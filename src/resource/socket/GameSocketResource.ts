@@ -1,4 +1,4 @@
-import {Drash, z} from "../deps.ts";
+import {z} from "../../deps.ts";
 import {
     IDataChatRequest,
     IDataDrawResponse,
@@ -7,19 +7,29 @@ import {
     ISocketMessageResponse,
     SocketChannel,
     SocketUser
-} from '../model/SocketModel.ts';
-import {loggerService} from '../server.ts';
-import {createPlayer, deletePlayer} from '../core/PlayerManager.ts';
-import {getRoomById, startGame} from '../core/RoomManager.ts';
-import {Room} from '../model/Room.ts';
-import InvalidParameterValue from '../model/exception/InvalidParameterValue.ts';
-import SocketInitNotPerformed from '../model/exception/SocketInitNotPerformed.ts';
-import {getValidChatMessage} from '../core/validator/ChatMessageValidator.ts';
-import {DrawTool, GameMode, ICoordinate, IDraw, IMessage, IPlayer, IRoomConfig, RoomState} from '../model/GameModel.ts';
-import {isPlayerCanDraw} from '../core/validator/DrawValidator.ts';
-import InvalidPermission from '../model/exception/InvalidPermission.ts';
-import {appRoomConfig} from '../config.ts';
-import InvalidState from "../model/exception/InvalidState.ts";
+} from '../../model/SocketModel.ts';
+import {loggerService} from '../../server.ts';
+import {createPlayer, deletePlayer} from '../../core/PlayerManager.ts';
+import {getRoomById, startGame} from '../../core/RoomManager.ts';
+import {Room} from '../../model/Room.ts';
+import InvalidParameterValue from '../../model/exception/InvalidParameterValue.ts';
+import SocketInitNotPerformed from '../../model/exception/SocketInitNotPerformed.ts';
+import {getValidChatMessage} from '../../core/validator/ChatMessageValidator.ts';
+import {
+    DrawTool,
+    GameMode,
+    ICoordinate,
+    IDraw,
+    IMessage,
+    IPlayer,
+    IRoomConfig,
+    RoomState
+} from '../../model/GameModel.ts';
+import {isPlayerCanDraw} from '../../core/validator/DrawValidator.ts';
+import InvalidPermission from '../../model/exception/InvalidPermission.ts';
+import {appRoomConfig} from '../../config.ts';
+import InvalidState from "../../model/exception/InvalidState.ts";
+import WSResource from "./WSResource.ts";
 
 const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
     roomId: z.string(),
@@ -53,28 +63,15 @@ const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object(
 
 const sockets = new Map<string, SocketUser>();
 
-export default class SocketResource extends Drash.Resource {
-    public paths = ["/ws"];
+export default class GameSocketResource extends WSResource {
 
-    public GET(request: Drash.Request, response: Drash.Response): void {
-        if (request.headers.has("connection") && request.headers.has("upgrade") &&
-            request.headers.get("connection")!.toLowerCase().includes("upgrade") &&
-            request.headers.get("upgrade")!.toLowerCase() === "websocket") {
-            try {
-                const {socket, response: socketResponse} = Deno.upgradeWebSocket(request);
-                this.#addEventHandlers(socket);
-                return response.upgrade(socketResponse);
-            } catch (error) {
-                return response.text(error);
-            }
-        }
-
-        return response.json({
-            error: "Invalid headers"
+    constructor() {
+        super({
+            paths: ["/ws"]
         });
     }
 
-    #addEventHandlers(socket: WebSocket): void {
+    protected addEventHandlers(socket: WebSocket): void {
         const socketUUID: string = crypto.randomUUID();
 
         try {
@@ -227,7 +224,7 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
         };
 
         room.addMessage(chatResponse);
-        room.playersId.forEach(otherPlayerId => {
+        room.playersId.forEach((otherPlayerId: string) => {
             const otherSocketUser = sockets.get(otherPlayerId);
             if (otherSocketUser != null) {
                 safeSend(otherSocketUser, JSON.stringify(responseChatMessage));
@@ -249,7 +246,7 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
     };
 
     room.round.addDraw(drawMessage);
-    room.playersId.forEach(otherPlayerId => {
+    room.playersId.forEach((otherPlayerId: string) => {
         if (otherPlayerId == socketUser.socketUUID) return;
 
         const otherSocketUser = sockets.get(otherPlayerId);
@@ -260,7 +257,7 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
 }
 
 function onMessageInfoChannel(socketUser: SocketUser, _message: ISocketMessageRequest) {
-    const [_player, room] = checkInitAndGetRoom(socketUser);
+    const [, room] = checkInitAndGetRoom(socketUser);
     const responseInfo: ISocketMessageResponse = {
         channel: SocketChannel.INFO,
         data: {
