@@ -46,6 +46,10 @@ export function startGame(room: Room) {
     room.state = RoomState.INGAME;
 }
 
+export function getRoomList(): Room[] {
+    return Array.from(roomMap.values());
+}
+
 function setAdmin(playerId: string, room: Room) {
     loggerService.debug(`Player (${playerId}) is now admin of room (${room.roomId})`);
     room.playerAdminId = playerId;

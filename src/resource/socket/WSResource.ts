@@ -1,4 +1,6 @@
 import {Drash} from "../../deps.ts";
+import {SocketUser} from "../../model/GameSocketModel.ts";
+import {loggerService} from "../../server.ts";
 
 export default abstract class WSResource extends Drash.Resource {
 

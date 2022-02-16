@@ -5,9 +5,9 @@ import {
     IDataInitRequest,
     ISocketMessageRequest,
     ISocketMessageResponse,
-    SocketChannel,
+    GameSocketChannel,
     SocketUser
-} from '../../model/SocketModel.ts';
+} from '../../model/GameSocketModel.ts';
 import {loggerService} from '../../server.ts';
 import {createPlayer, deletePlayer} from '../../core/PlayerManager.ts';
 import {getRoomById, startGame} from '../../core/RoomManager.ts';
@@ -57,11 +57,15 @@ const DataStartRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
 });
 
 const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object({
-    channel: z.nativeEnum(SocketChannel),
+    channel: z.nativeEnum(GameSocketChannel),
     data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawRequestSchema).or(DataStartRequestSchema).optional()
 });
 
 const sockets = new Map<string, SocketUser>();
+
+export function getSocketsCount(): number {
+    return sockets.size;
+}
 
 export default class GameSocketResource extends WSResource {
 
@@ -138,35 +142,35 @@ export default class GameSocketResource extends WSResource {
 }
 
 function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequest) {
-    const channel: SocketChannel = message.channel;
+    const channel: GameSocketChannel = message.channel;
     try {
         loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Handle channel (${channel})`);
 
         switch (channel) {
-            case SocketChannel.PING: {
-                safeSend(socketUser, JSON.stringify({channel: SocketChannel.PONG}));
+            case GameSocketChannel.PING: {
+                safeSend(socketUser, JSON.stringify({channel: GameSocketChannel.PONG}));
                 break;
             }
-            case SocketChannel.PONG: {
+            case GameSocketChannel.PONG: {
                 break;
             }
-            case SocketChannel.INIT: {
+            case GameSocketChannel.INIT: {
                 onMessageInitChannel(socketUser, message);
                 break;
             }
-            case SocketChannel.CHAT: {
+            case GameSocketChannel.CHAT: {
                 onMessageChatChannel(socketUser, message);
                 break;
             }
-            case SocketChannel.DRAW: {
+            case GameSocketChannel.DRAW: {
                 onMessageDrawChannel(socketUser, message);
                 break;
             }
-            case SocketChannel.INFO: {
+            case GameSocketChannel.INFO: {
                 onMessageInfoChannel(socketUser, message);
                 break;
             }
-            case SocketChannel.START: {
+            case GameSocketChannel.START: {
                 onMessageStartChannel(socketUser, message);
                 break;
             }
@@ -200,7 +204,7 @@ function onMessageInitChannel(socketUser: SocketUser, message: ISocketMessageReq
     socketUser.roomId = room.roomId;
 
     const responseInitMessage: ISocketMessageResponse = {
-        channel: SocketChannel.INIT,
+        channel: GameSocketChannel.INIT,
         data: {
             playerId: socketUUID,
             messages: room.messages,
@@ -219,7 +223,7 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
         if (!chatResponse) return;
 
         const responseChatMessage: ISocketMessageResponse = {
-            channel: SocketChannel.CHAT,
+            channel: GameSocketChannel.CHAT,
             data: chatResponse
         };
 
@@ -241,7 +245,7 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
     const drawMessageEnhance: IDataDrawResponse = {...drawMessage, draftsman: player};
 
     const responseDraw: ISocketMessageResponse = {
-        channel: SocketChannel.DRAW,
+        channel: GameSocketChannel.DRAW,
         data: drawMessageEnhance
     };
 
@@ -259,7 +263,7 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
 function onMessageInfoChannel(socketUser: SocketUser, _message: ISocketMessageRequest) {
     const [, room] = checkInitAndGetRoom(socketUser);
     const responseInfo: ISocketMessageResponse = {
-        channel: SocketChannel.INFO,
+        channel: GameSocketChannel.INFO,
         data: {
             roomState: room.state,
             playerList: room.players,
@@ -279,7 +283,7 @@ function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRe
     room.config = roomConfig;
 
     const responseStart: ISocketMessageResponse = {
-        channel: SocketChannel.START,
+        channel: GameSocketChannel.START,
         data: roomConfig
     };
 

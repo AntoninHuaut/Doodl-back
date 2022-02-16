@@ -1,5 +1,8 @@
 import {loggerService} from '../../server.ts';
 import WSResource from "./WSResource.ts";
+import {AdminSocketChannel, IAdminRoomInfo, IAdminSocketConnectResponse} from "../../model/AdminSocketModel.ts";
+import {getRoomList} from "../../core/RoomManager.ts";
+import {getSocketsCount} from "./GameSocketResource.ts";
 
 export default class AdminSocketResource extends WSResource {
 
@@ -14,6 +17,23 @@ export default class AdminSocketResource extends WSResource {
         try {
             socket.onopen = () => {
                 loggerService.debug(`Open`);
+                const roomList: IAdminRoomInfo[] = getRoomList().map(room => {
+                    return {
+                        roomId: room.roomId,
+                        playerList: room.players
+                    }
+                });
+
+                const connectResponse: IAdminSocketConnectResponse = {
+                    channel: AdminSocketChannel.CONNECT,
+                    data: {
+                        roomCount: roomList.length,
+                        wsCount: getSocketsCount(),
+                        roomList: roomList
+                    }
+                };
+
+                safeSend(socket, JSON.stringify(connectResponse));
             };
 
             socket.onmessage = (e: MessageEvent) => {
@@ -31,5 +51,13 @@ export default class AdminSocketResource extends WSResource {
         } catch (error) {
             loggerService.error(`Error: ${JSON.stringify(error.stack)}`);
         }
+    }
+}
+
+function safeSend(socket: WebSocket, message: string) {
+    try {
+        socket.send(message);
+    } catch (error) {
+        loggerService.error(`WebSocket Admin - ${error.stack} `);
     }
 }
