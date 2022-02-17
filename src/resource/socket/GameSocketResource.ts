@@ -262,6 +262,8 @@ function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRe
     if (room.state !== RoomState.LOBBY) throw new InvalidState("The room must be in the LOBBY state");
 
     const roomConfig: IRoomConfig = DataStartRequestSchema.parse(message.data);
+    if (roomConfig.maxPlayer < room.players.length) throw new InvalidParameterValue("The maxPlayer parameter is smaller than the number of players in the room");
+
     room.config = roomConfig;
 
     const responseStart: ISocketMessageResponse = {
@@ -270,7 +272,12 @@ function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRe
     };
 
     startGame(room);
-    safeSend(socketUser, JSON.stringify(responseStart));
+    room.playersId.forEach((otherPlayerId: string) => {
+        const otherSocketUser = sockets.get(otherPlayerId);
+        if (otherSocketUser != null) {
+            safeSend(socketUser, JSON.stringify(responseStart));
+        }
+    });
 }
 
 function checkInitAndGetRoom(socketUser: SocketUser): [IPlayer, Room] {
