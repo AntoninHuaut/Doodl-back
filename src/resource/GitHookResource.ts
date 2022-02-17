@@ -15,7 +15,7 @@ export default class GitHookResource extends Drash.Resource {
         const deployBack = serverBackToken === userGitlabToken;
         const deployFront = serverFrontToken === userGitlabToken;
 
-        if (!deployBack && !deployFront) throw new Drash.Errors.HttpError(404);
+        if (!deployBack && !deployFront) throw new Drash.Errors.HttpError(403);
 
         response.headers.set("Accept", "application/vnd.contentful.management.v1+json");
 

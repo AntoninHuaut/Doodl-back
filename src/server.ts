@@ -9,7 +9,8 @@ import ErrorHandler from "./handler/ErrorHandler.ts";
 import GitHookResource from "./resource/GitHookResource.ts";
 import ConfigResource from "./resource/ConfigResource.ts";
 import RoomResource from "./resource/RoomResource.ts";
-import SocketResource from "./resource/SocketResource.ts";
+import GameSocketResource from "./resource/socket/GameSocketResource.ts";
+import AdminSocketResource from "./resource/socket/AdminSocketResource.ts";
 
 export const loggerService = new LoggerService();
 
@@ -26,10 +27,12 @@ export const server = new Drash.Server({
     ],
     resources: [
         FrontResource, // MUST BE THE FIRST
+
         FilesResource,
         ConfigResource,
         GitHookResource,
         RoomResource,
-        SocketResource
+        GameSocketResource,
+        AdminSocketResource
     ],
 });

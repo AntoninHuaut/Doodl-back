@@ -8,7 +8,7 @@ export interface SocketUser {
 }
 
 export interface ISocketMessage {
-    channel: SocketChannel;
+    channel: GameSocketChannel;
 }
 
 export interface ISocketMessageRequest extends ISocketMessage {
@@ -52,7 +52,7 @@ export interface IDataInfoResponse {
 // IDataStartRequest = IRoomConfig
 // IDataStartResponse = Not stated (IRoomConfig tmp) // TODO
 
-export enum SocketChannel {
+export enum GameSocketChannel {
     PING = "PING",
     PONG = "PONG",
     INIT = "INIT",

@@ -1,25 +1,35 @@
-import {Drash, z} from "../deps.ts";
+import {z} from "../../deps.ts";
 import {
     IDataChatRequest,
     IDataDrawResponse,
     IDataInitRequest,
     ISocketMessageRequest,
     ISocketMessageResponse,
-    SocketChannel,
+    GameSocketChannel,
     SocketUser
-} from '../model/SocketModel.ts';
-import {loggerService} from '../server.ts';
-import {createPlayer, deletePlayer} from '../core/PlayerManager.ts';
-import {getRoomById, startGame} from '../core/RoomManager.ts';
-import {Room} from '../model/Room.ts';
-import InvalidParameterValue from '../model/exception/InvalidParameterValue.ts';
-import SocketInitNotPerformed from '../model/exception/SocketInitNotPerformed.ts';
-import {getValidChatMessage} from '../core/validator/ChatMessageValidator.ts';
-import {DrawTool, GameMode, ICoordinate, IDraw, IMessage, IPlayer, IRoomConfig, RoomState} from '../model/GameModel.ts';
-import {isPlayerCanDraw} from '../core/validator/DrawValidator.ts';
-import InvalidPermission from '../model/exception/InvalidPermission.ts';
-import {appRoomConfig} from '../config.ts';
-import InvalidState from "../model/exception/InvalidState.ts";
+} from '../../model/GameSocketModel.ts';
+import {loggerService} from '../../server.ts';
+import {createPlayer, deletePlayer} from '../../core/PlayerManager.ts';
+import {getRoomById, startGame} from '../../core/RoomManager.ts';
+import {Room} from '../../model/Room.ts';
+import InvalidParameterValue from '../../model/exception/InvalidParameterValue.ts';
+import SocketInitNotPerformed from '../../model/exception/SocketInitNotPerformed.ts';
+import {getValidChatMessage} from '../../core/validator/ChatMessageValidator.ts';
+import {
+    DrawTool,
+    GameMode,
+    ICoordinate,
+    IDraw,
+    IMessage,
+    IPlayer,
+    IRoomConfig,
+    RoomState
+} from '../../model/GameModel.ts';
+import {isPlayerCanDraw} from '../../core/validator/DrawValidator.ts';
+import InvalidPermission from '../../model/exception/InvalidPermission.ts';
+import {appRoomConfig} from '../../config.ts';
+import InvalidState from "../../model/exception/InvalidState.ts";
+import WSResource from "./WSResource.ts";
 
 const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
     roomId: z.string(),
@@ -47,34 +57,25 @@ const DataStartRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
 });
 
 const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object({
-    channel: z.nativeEnum(SocketChannel),
+    channel: z.nativeEnum(GameSocketChannel),
     data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawRequestSchema).or(DataStartRequestSchema).optional()
 });
 
 const sockets = new Map<string, SocketUser>();
 
-export default class SocketResource extends Drash.Resource {
-    public paths = ["/ws"];
+export function getSocketsCount(): number {
+    return sockets.size;
+}
 
-    public GET(request: Drash.Request, response: Drash.Response): void {
-        if (request.headers.has("connection") && request.headers.has("upgrade") &&
-            request.headers.get("connection")!.toLowerCase().includes("upgrade") &&
-            request.headers.get("upgrade")!.toLowerCase() === "websocket") {
-            try {
-                const {socket, response: socketResponse} = Deno.upgradeWebSocket(request);
-                this.#addEventHandlers(socket);
-                return response.upgrade(socketResponse);
-            } catch (error) {
-                return response.text(error);
-            }
-        }
+export default class GameSocketResource extends WSResource {
 
-        return response.json({
-            error: "Invalid headers"
+    constructor() {
+        super({
+            paths: ["/ws"]
         });
     }
 
-    #addEventHandlers(socket: WebSocket): void {
+    protected addEventHandlers(socket: WebSocket): void {
         const socketUUID: string = crypto.randomUUID();
 
         try {
@@ -90,20 +91,10 @@ export default class SocketResource extends Drash.Resource {
                 const socketUser: SocketUser | undefined = sockets.get(socketUUID);
                 if (socketUser == null) return;
 
-                try {
+                this.safeOnSocketMessage(socketUser, () => {
                     const jsonRequest = SocketMessageRequestSchema.parse(JSON.parse(e.data));
                     handleSocketMessage(socketUser, jsonRequest);
-                } catch (error) {
-                    let errorResponse: z.ZodIssue[] | string;
-
-                    if (error instanceof z.ZodError) {
-                        errorResponse = error.issues;
-                    } else {
-                        errorResponse = error.name;
-                    }
-
-                    return safeSend(socketUser, JSON.stringify({error: errorResponse}));
-                }
+                }, safeSend);
             };
 
             socket.onclose = () => {
@@ -120,20 +111,12 @@ export default class SocketResource extends Drash.Resource {
                 const socketUser: SocketUser | undefined = sockets.get(socketUUID);
                 if (socketUser == null) return;
 
-                const errorStack = e instanceof ErrorEvent ? {
-                    message: e.message ?? "Unknown message",
-                    filename: e.filename ?? "Unknown filename",
-                    lineno: e.lineno ?? "Unknown lineno",
-                    colno: e.colno ?? "Unknown colno",
-                    error: e.error ?? "Unknown error",
-                    stack: e.error?.stack ?? "Unknown error.stack"
-                } : e;
                 loggerService.error(`WebSocket ${socketUser.socketUUID} - WebSocket error: ${
-                    JSON.stringify(errorStack, null, 2)
+                    JSON.stringify(this.getErrorToPrint(e), null, 2)
                 }`);
             }
         } catch (error) {
-            loggerService.error(`WIP WebSocket ${socketUUID ?? 'Unknown'} - Error: ${
+            loggerService.error(`WebSocket ${socketUUID ?? 'Unknown'} - Error: ${
                 JSON.stringify(error.stack, null, 2)
             }`);
         }
@@ -141,35 +124,35 @@ export default class SocketResource extends Drash.Resource {
 }
 
 function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequest) {
-    const channel: SocketChannel = message.channel;
+    const channel: GameSocketChannel = message.channel;
     try {
         loggerService.debug(`WebSocket (${socketUser.socketUUID}) - Handle channel (${channel})`);
 
         switch (channel) {
-            case SocketChannel.PING: {
-                safeSend(socketUser, JSON.stringify({channel: SocketChannel.PONG}));
+            case GameSocketChannel.PING: {
+                safeSend(socketUser, JSON.stringify({channel: GameSocketChannel.PONG}));
                 break;
             }
-            case SocketChannel.PONG: {
+            case GameSocketChannel.PONG: {
                 break;
             }
-            case SocketChannel.INIT: {
+            case GameSocketChannel.INIT: {
                 onMessageInitChannel(socketUser, message);
                 break;
             }
-            case SocketChannel.CHAT: {
+            case GameSocketChannel.CHAT: {
                 onMessageChatChannel(socketUser, message);
                 break;
             }
-            case SocketChannel.DRAW: {
+            case GameSocketChannel.DRAW: {
                 onMessageDrawChannel(socketUser, message);
                 break;
             }
-            case SocketChannel.INFO: {
+            case GameSocketChannel.INFO: {
                 onMessageInfoChannel(socketUser, message);
                 break;
             }
-            case SocketChannel.START: {
+            case GameSocketChannel.START: {
                 onMessageStartChannel(socketUser, message);
                 break;
             }
@@ -203,7 +186,7 @@ function onMessageInitChannel(socketUser: SocketUser, message: ISocketMessageReq
     socketUser.roomId = room.roomId;
 
     const responseInitMessage: ISocketMessageResponse = {
-        channel: SocketChannel.INIT,
+        channel: GameSocketChannel.INIT,
         data: {
             playerId: socketUUID,
             messages: room.messages,
@@ -222,12 +205,12 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
         if (!chatResponse) return;
 
         const responseChatMessage: ISocketMessageResponse = {
-            channel: SocketChannel.CHAT,
+            channel: GameSocketChannel.CHAT,
             data: chatResponse
         };
 
         room.addMessage(chatResponse);
-        room.playersId.forEach(otherPlayerId => {
+        room.playersId.forEach((otherPlayerId: string) => {
             const otherSocketUser = sockets.get(otherPlayerId);
             if (otherSocketUser != null) {
                 safeSend(otherSocketUser, JSON.stringify(responseChatMessage));
@@ -244,12 +227,12 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
     const drawMessageEnhance: IDataDrawResponse = {...drawMessage, draftsman: player};
 
     const responseDraw: ISocketMessageResponse = {
-        channel: SocketChannel.DRAW,
+        channel: GameSocketChannel.DRAW,
         data: drawMessageEnhance
     };
 
     room.round.addDraw(drawMessage);
-    room.playersId.forEach(otherPlayerId => {
+    room.playersId.forEach((otherPlayerId: string) => {
         if (otherPlayerId == socketUser.socketUUID) return;
 
         const otherSocketUser = sockets.get(otherPlayerId);
@@ -260,9 +243,9 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
 }
 
 function onMessageInfoChannel(socketUser: SocketUser, _message: ISocketMessageRequest) {
-    const [_player, room] = checkInitAndGetRoom(socketUser);
+    const [, room] = checkInitAndGetRoom(socketUser);
     const responseInfo: ISocketMessageResponse = {
-        channel: SocketChannel.INFO,
+        channel: GameSocketChannel.INFO,
         data: {
             roomState: room.state,
             playerList: room.players,
@@ -282,7 +265,7 @@ function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRe
     room.config = roomConfig;
 
     const responseStart: ISocketMessageResponse = {
-        channel: SocketChannel.START,
+        channel: GameSocketChannel.START,
         data: roomConfig
     };
 
