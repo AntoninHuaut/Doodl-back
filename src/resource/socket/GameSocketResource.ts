@@ -204,12 +204,7 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
 
     room.round.handleChatMessage(player, chatMessage, (guessData: IDataGuestResponse | undefined) => {
         if (guessData) {
-            room.playersId.forEach((otherPlayerId: string) => {
-                const otherSocketUser = sockets.get(otherPlayerId);
-                if (otherSocketUser != null) {
-                    safeSend(otherSocketUser, JSON.stringify(guessData));
-                }
-            });
+            broadcastMessage(room, JSON.stringify(guessData));
         } else {
             const chatResponse: IMessage | undefined = getValidChatMessage(player, chatMessage.message);
             if (!chatResponse) return;
@@ -220,12 +215,7 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
             };
 
             room.addMessage(chatResponse);
-            room.playersId.forEach((otherPlayerId: string) => {
-                const otherSocketUser = sockets.get(otherPlayerId);
-                if (otherSocketUser != null) {
-                    safeSend(otherSocketUser, JSON.stringify(responseChatMessage));
-                }
-            });
+            broadcastMessage(room, JSON.stringify(responseChatMessage));
         }
     });
 }
@@ -243,14 +233,7 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
     };
 
     room.round.addDraw(drawMessage);
-    room.playersId.forEach((otherPlayerId: string) => {
-        if (otherPlayerId == socketUser.socketUUID) return;
-
-        const otherSocketUser = sockets.get(otherPlayerId);
-        if (otherSocketUser != null) {
-            safeSend(otherSocketUser, JSON.stringify(responseDraw));
-        }
-    });
+    broadcastMessage(room, JSON.stringify(responseDraw), [socketUser.socketUUID]);
 }
 
 function onMessageInfoChannel(socketUser: SocketUser, _message: ISocketMessageRequest) {
@@ -260,7 +243,7 @@ function onMessageInfoChannel(socketUser: SocketUser, _message: ISocketMessageRe
         data: {
             roomState: room.state,
             playerList: room.players,
-            roomConfig: room.config
+            roomConfig: room.roomConfig
         }
     };
 
@@ -275,7 +258,7 @@ function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRe
     const roomConfig: IRoomConfig = DataStartRequestSchema.parse(message.data);
     if (roomConfig.maxPlayer < room.players.length) throw new InvalidParameterValue("The maxPlayer parameter is smaller than the number of players in the room");
 
-    room.config = roomConfig;
+    room.roomConfig = roomConfig;
 
     const responseStart: ISocketMessageResponse = {
         channel: GameSocketChannel.START,
@@ -283,12 +266,7 @@ function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRe
     };
 
     startGame(room);
-    room.playersId.forEach((otherPlayerId: string) => {
-        const otherSocketUser = sockets.get(otherPlayerId);
-        if (otherSocketUser != null) {
-            safeSend(socketUser, JSON.stringify(responseStart));
-        }
-    });
+    broadcastMessage(room, JSON.stringify(responseStart));
 }
 
 function checkInitAndGetRoom(socketUser: SocketUser): [IPlayer, Room] {
@@ -299,6 +277,17 @@ function checkInitAndGetRoom(socketUser: SocketUser): [IPlayer, Room] {
     if (room == null) throw new InvalidParameterValue("Invalid roomId");
 
     return [player, room];
+}
+
+function broadcastMessage(room: Room, message: string, ignorePlayersId: string[] = []) {
+    room.playersId.forEach((otherPlayerId: string) => {
+        if (ignorePlayersId.includes(otherPlayerId)) return;
+
+        const otherSocketUser = sockets.get(otherPlayerId);
+        if (otherSocketUser != null) {
+            safeSend(otherSocketUser, message);
+        }
+    });
 }
 
 function safeSend(socketUser: SocketUser, message: string) {

@@ -12,7 +12,7 @@ export default class ClassicRound extends Round {
 
     protected override guessWord(guessPlayer: IPlayer): IDataGuestResponse {
         const startDate = this._dateStartedDrawing as Date;
-        const endDate = new Date(startDate.getTime() + this._room.config.timeByTurn * 1000);
+        const endDate = new Date(startDate.getTime() + this._room.roomConfig.timeByTurn * 1000);
         const guessGainPoint = getGuessPoint(startDate, endDate, new Date());
         const drawGainPoint = Math.round(guessGainPoint / 2);
 

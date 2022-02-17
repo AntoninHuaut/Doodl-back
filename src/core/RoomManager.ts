@@ -1,4 +1,4 @@
-import {IPlayer, RoomState} from '../model/GameModel.ts';
+import {IPlayer} from '../model/GameModel.ts';
 import {Room} from '../model/Room.ts';
 import {loggerService} from '../server.ts';
 

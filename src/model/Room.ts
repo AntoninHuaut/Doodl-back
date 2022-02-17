@@ -70,7 +70,7 @@ export class Room {
         this.players.forEach(player => player.point = 0); // TODO test
     }
 
-    set config(config: IRoomConfig) {
+    set roomConfig(config: IRoomConfig) {
         if (this.#state !== RoomState.LOBBY) throw new InvalidState("Room can only be updated in lobby");
 
         this.#roomConfig = config;
@@ -86,7 +86,23 @@ export class Room {
         return this.#state
     }
 
-    get config(): IRoomConfig {
+    get playersId() {
+        return this.#players.map(p => p.playerId);
+    }
+
+    get status(): IRoomStatus {
+        return {
+            isPlaying: this.#round.dateStartedDrawing !== null,
+            playerList: this.#players,
+            playerTurn: this.#round.playerTurn
+        }
+    }
+
+    isPlayerAdmin(player: IPlayer) {
+        return player.playerId === this.#playerAdminId;
+    }
+
+    get roomConfig(): IRoomConfig {
         return this.#roomConfig;
     }
 
@@ -98,28 +114,12 @@ export class Room {
         return this.#messages;
     }
 
-    get playersId() {
-        return this.#players.map(p => p.playerId);
-    }
-
     get round(): Round {
         return this.#round;
     }
 
-    get status(): IRoomStatus {
-        return {
-            isPlaying: this.#round.dateStartedDrawing !== null,
-            playerList: this.#players,
-            playerTurn: this.#round.playerTurn
-        }
-    }
-
     get roomId() {
         return this.#roomId;
-    }
-
-    isPlayerAdmin(player: IPlayer) {
-        return player.playerId === this.#playerAdminId;
     }
 
     set playerAdminId(playerAdminId: string | undefined) {
