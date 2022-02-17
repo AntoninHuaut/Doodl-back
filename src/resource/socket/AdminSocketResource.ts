@@ -87,15 +87,19 @@ function sendGlobalData(socket: WebSocket) {
     const roomList: IAdminRoomInfo[] = getRoomList().map(room => {
         return {
             roomId: room.roomId,
-            playerList: room.players
+            playerList: room.players,
+            drawCount: room.round.draws.length
         }
     });
+
+    const drawCount: number = roomList.map(r => r.drawCount).reduce((a: number, b: number) => a + b, 0);
 
     const connectResponse: IAdminSocketConnectResponse = {
         channel: AdminSocketChannel.GLOBAL_DATA,
         data: {
             roomCount: roomList.length,
             wsCount: getSocketsCount(),
+            drawCount: drawCount,
             roomList: roomList
         }
     };
