@@ -239,7 +239,11 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
 
 function onMessageInfoChannel(socketUser: SocketUser) {
     const [, room] = checkInitAndGetRoom(socketUser);
-    const responseInfo: ISocketMessageResponse = {
+    safeSend(socketUser, JSON.stringify(getISocketMessageResponse(room)));
+}
+
+function getISocketMessageResponse(room: Room): ISocketMessageResponse {
+    return {
         channel: GameSocketChannel.INFO,
         data: {
             roomState: room.state,
@@ -248,8 +252,6 @@ function onMessageInfoChannel(socketUser: SocketUser) {
             roomConfig: room.roomConfig
         }
     };
-
-    safeSend(socketUser, JSON.stringify(responseInfo));
 }
 
 function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
@@ -268,7 +270,8 @@ function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRe
     };
 
     startGame(room);
-    broadcastMessage(room, JSON.stringify(responseStart));
+    safeSend(socketUser, JSON.stringify(responseStart));
+    broadcastMessage(room, JSON.stringify(getISocketMessageResponse(room)));
 }
 
 function checkInitAndGetRoom(socketUser: SocketUser): [IPlayer, Room] {
@@ -282,7 +285,8 @@ function checkInitAndGetRoom(socketUser: SocketUser): [IPlayer, Room] {
 }
 
 function broadcastMessage(room: Room, message: string, ignorePlayersId: string[] = []) {
-    room.playersId.forEach((otherPlayerId: string) => {
+    room.players.forEach((otherPlayer: IPlayer) => {
+        const otherPlayerId = otherPlayer.playerId;
         if (ignorePlayersId.includes(otherPlayerId)) return;
 
         const otherSocketUser = sockets.get(otherPlayerId);

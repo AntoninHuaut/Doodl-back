@@ -86,10 +86,6 @@ export class Room {
         return this.#state
     }
 
-    get playersId() {
-        return this.#players.map(p => p.playerId);
-    }
-
     get status(): IRoomStatus {
         return {
             isPlaying: this.#round.dateStartedDrawing !== null,

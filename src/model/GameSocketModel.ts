@@ -51,7 +51,7 @@ export interface IDataInfoResponse {
 }
 
 // IDataStartRequest = IRoomConfig
-// IDataStartResponse = Not stated (IRoomConfig tmp) // TODO
+// IDataStartResponse = IRoomConfig on success
 
 // IDataGuessRequest doesn't exist
 export interface IDataGuestResponse {
