@@ -12,7 +12,7 @@ import {
 import {loggerService} from '../../server.ts';
 import {createPlayer, deletePlayer} from '../../core/PlayerManager.ts';
 import {getRoomById, startGame} from '../../core/RoomManager.ts';
-import {Room} from '../../model/Room.ts';
+import {Room} from '../../core/Room.ts';
 import InvalidParameterValue from '../../model/exception/InvalidParameterValue.ts';
 import SocketInitNotPerformed from '../../model/exception/SocketInitNotPerformed.ts';
 import {getValidChatMessage} from '../../core/validator/ChatMessageValidator.ts';
@@ -54,7 +54,7 @@ const DataDrawRequestSchema: z.ZodSchema<IDraw> = z.object({
 const DataStartRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
     gameMode: z.nativeEnum(GameMode),
     timeByTurn: z.number().min(appRoomConfig.minTimeByTurn).max(appRoomConfig.maxTimeByTurn),
-    roundByGame: z.number().min(appRoomConfig.minRoundByGame).max(appRoomConfig.maxRoundByGame)
+    cycleRoundByGame: z.number().min(appRoomConfig.minCycleRoundByGame).max(appRoomConfig.maxCycleRoundByGame)
 });
 
 const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object({

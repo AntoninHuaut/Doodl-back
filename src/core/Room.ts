@@ -1,7 +1,7 @@
 import Round from './round/Round.ts';
 import ClassicRound from './round/ClassicRound.ts';
-import {GameMode, IMessage, IPlayer, IRoomConfig, IRoomStatus, RoomState} from './GameModel.ts';
-import InvalidState from './exception/InvalidState.ts';
+import {GameMode, IMessage, IPlayer, IRoomConfig, IRoomStatus, RoomState} from '../model/GameModel.ts';
+import InvalidState from '../model/exception/InvalidState.ts';
 import {broadcastMessage, getISocketMessageResponse} from "../resource/socket/GameSocketResource.ts";
 import {loggerService} from "../server.ts";
 
@@ -9,7 +9,7 @@ export class Room {
 
     static readonly DEFAULT_GAMEMODE: GameMode = GameMode.CLASSIC;
     static readonly DEFAULT_ROUND_TIME_DURATION: number = 90;
-    static readonly DEFAULT_ROUND_BY_GAME: number = 5;
+    static readonly DEFAULT_CYCLE_ROUND_BY_GAME: number = 5;
 
 
     #roomId: string;
@@ -27,7 +27,7 @@ export class Room {
         this.#roomConfig = {
             gameMode: Room.DEFAULT_GAMEMODE,
             timeByTurn: Room.DEFAULT_ROUND_TIME_DURATION,
-            roundByGame: Room.DEFAULT_ROUND_BY_GAME
+            cycleRoundByGame: Room.DEFAULT_CYCLE_ROUND_BY_GAME
         };
         this.#round = new ClassicRound(this, null, []);
         this.#state = RoomState.LOBBY;
@@ -59,6 +59,7 @@ export class Room {
 
     removePlayerId(playerId: string) {
         this.#players = this.#players.filter((p: IPlayer) => p.playerId != playerId);
+        this.round.removePlayerId(playerId);
     }
 
     addMessage(message: IMessage) {

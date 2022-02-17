@@ -1,8 +1,8 @@
 import Round from './Round.ts';
-import {IPlayer} from '../GameModel.ts';
+import {IPlayer} from '../../model/GameModel.ts';
 import {Room} from "../Room.ts";
-import {getGuessPoint} from "../../core/WordManager.ts";
-import {IDataGuestResponse} from "../GameSocketModel.ts";
+import {getGuessPoint} from "../WordManager.ts";
+import {IDataGuestResponse} from "../../model/GameSocketModel.ts";
 import {loggerService} from "../../server.ts";
 
 export default class ClassicRound extends Round {
@@ -13,6 +13,8 @@ export default class ClassicRound extends Round {
 
     protected override guessWord(guessPlayer: IPlayer): IDataGuestResponse {
         loggerService.debug(`ClassicRound::guessWord - Room (${this._room.roomId}) - Player (${guessPlayer.playerId})`);
+
+        this._playersGuess.push(guessPlayer);
 
         const startDate = this._dateStartedDrawing as Date;
         const endDate = new Date(startDate.getTime() + this._room.roomConfig.timeByTurn * 1000);

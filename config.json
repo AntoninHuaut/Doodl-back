@@ -9,8 +9,8 @@
     "maxPlayerPerRoom": 32,
     "minTimeByTurn": 5,
     "maxTimeByTurn": 600,
-    "minRoundByGame": 1,
-    "maxRoundByGame": 32,
+    "minCycleRoundByGame": 1,
+    "maxCycleRoundByGame": 32,
 
     "maxChatMessageLength": 280,
     "minPointGuess": 500,

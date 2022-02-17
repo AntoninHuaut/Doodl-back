@@ -1,7 +1,7 @@
 export interface IRoomConfig {
     gameMode: GameMode;
     timeByTurn: number;
-    roundByGame: number;
+    cycleRoundByGame: number;
 }
 
 export interface IPlayer {

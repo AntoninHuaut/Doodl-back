@@ -1,5 +1,5 @@
 import {IPlayer, RoomState} from '../model/GameModel.ts';
-import {Room} from '../model/Room.ts';
+import {Room} from './Room.ts';
 import {loggerService} from '../server.ts';
 import InvalidState from "../model/exception/InvalidState.ts";
 import {appRoomConfig} from "../config.ts";
