@@ -54,7 +54,6 @@ const DataDrawRequestSchema: z.ZodSchema<IDraw> = z.object({
 const DataStartRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
     gameMode: z.nativeEnum(GameMode),
     timeByTurn: z.number().min(appRoomConfig.minTimeByTurn).max(appRoomConfig.maxTimeByTurn),
-    maxPlayer: z.number().min(appRoomConfig.minMaxPlayer).max(appRoomConfig.maxMaxPlayer),
     roundByGame: z.number().min(appRoomConfig.minRoundByGame).max(appRoomConfig.maxRoundByGame)
 });
 
@@ -262,7 +261,6 @@ function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRe
 
     const newRoomConfig: IRoomConfig = DataStartRequestSchema.parse(message.data);
     if (room.players.length < 2) throw new InvalidState("Invalid minimum number of players");
-    if (newRoomConfig.maxPlayer < room.players.length) throw new InvalidParameterValue("The maxPlayer parameter is smaller than the number of players in the room");
 
     room.roomConfig = newRoomConfig;
 

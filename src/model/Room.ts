@@ -8,7 +8,6 @@ import {loggerService} from "../server.ts";
 export class Room {
 
     static readonly DEFAULT_GAMEMODE: GameMode = GameMode.CLASSIC;
-    static readonly DEFAULT_MAX_PLAYERS: number = 16;
     static readonly DEFAULT_ROUND_TIME_DURATION: number = 90;
     static readonly DEFAULT_ROUND_BY_GAME: number = 5;
 
@@ -27,7 +26,6 @@ export class Room {
         this.#roomId = roomId;
         this.#roomConfig = {
             gameMode: Room.DEFAULT_GAMEMODE,
-            maxPlayer: Room.DEFAULT_MAX_PLAYERS,
             timeByTurn: Room.DEFAULT_ROUND_TIME_DURATION,
             roundByGame: Room.DEFAULT_ROUND_BY_GAME
         };

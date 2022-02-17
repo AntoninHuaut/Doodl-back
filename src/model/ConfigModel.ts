@@ -12,8 +12,8 @@ export interface IServerConfig {
 }
 
 export interface IRoomServerConfig {
-    minMaxPlayer: number;
-    maxMaxPlayer: number;
+    minPlayerPerRoom: number;
+    maxPlayerPerRoom: number;
     minTimeByTurn: number;
     maxTimeByTurn: number;
     minRoundByGame: number;

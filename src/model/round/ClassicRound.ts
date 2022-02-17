@@ -3,6 +3,7 @@ import {IPlayer} from '../GameModel.ts';
 import {Room} from "../Room.ts";
 import {getGuessPoint} from "../../core/WordManager.ts";
 import {IDataGuestResponse} from "../GameSocketModel.ts";
+import {loggerService} from "../../server.ts";
 
 export default class ClassicRound extends Round {
 
@@ -11,6 +12,8 @@ export default class ClassicRound extends Round {
     }
 
     protected override guessWord(guessPlayer: IPlayer): IDataGuestResponse {
+        loggerService.debug(`ClassicRound::guessWord - Room (${this._room.roomId}) - Player (${guessPlayer.playerId})`);
+
         const startDate = this._dateStartedDrawing as Date;
         const endDate = new Date(startDate.getTime() + this._room.roomConfig.timeByTurn * 1000);
         const guessGainPoint = getGuessPoint(startDate, endDate, new Date());
