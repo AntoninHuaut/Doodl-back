@@ -147,7 +147,7 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
                 break;
             }
             case GameSocketChannel.INFO: {
-                onMessageInfoChannel(socketUser, message);
+                onMessageInfoChannel(socketUser);
                 break;
             }
             case GameSocketChannel.START: {
@@ -196,6 +196,7 @@ function onMessageInitChannel(socketUser: SocketUser, message: ISocketMessageReq
         }
     };
     safeSend(socketUser, JSON.stringify(responseInitMessage));
+    onMessageInfoChannel(socketUser);
 }
 
 function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
@@ -236,7 +237,7 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
     broadcastMessage(room, JSON.stringify(responseDraw), [socketUser.socketUUID]);
 }
 
-function onMessageInfoChannel(socketUser: SocketUser, _message: ISocketMessageRequest) {
+function onMessageInfoChannel(socketUser: SocketUser) {
     const [, room] = checkInitAndGetRoom(socketUser);
     const responseInfo: ISocketMessageResponse = {
         channel: GameSocketChannel.INFO,
