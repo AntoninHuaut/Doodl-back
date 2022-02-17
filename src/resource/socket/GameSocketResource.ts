@@ -54,7 +54,8 @@ const DataDrawRequestSchema: z.ZodSchema<IDraw> = z.object({
 const DataStartRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
     gameMode: z.nativeEnum(GameMode),
     timeByTurn: z.number().min(appRoomConfig.minTimeByTurn).max(appRoomConfig.maxTimeByTurn),
-    maxPlayer: z.number().min(appRoomConfig.minMaxPlayer).max(appRoomConfig.maxMaxPlayer)
+    maxPlayer: z.number().min(appRoomConfig.minMaxPlayer).max(appRoomConfig.maxMaxPlayer),
+    roundByGame: z.number().min(appRoomConfig.minRoundByGame).max(appRoomConfig.maxRoundByGame)
 });
 
 const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object({
@@ -242,7 +243,7 @@ function onMessageInfoChannel(socketUser: SocketUser) {
     safeSend(socketUser, JSON.stringify(getISocketMessageResponse(room)));
 }
 
-function getISocketMessageResponse(room: Room): ISocketMessageResponse {
+export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
     return {
         channel: GameSocketChannel.INFO,
         data: {
@@ -259,14 +260,15 @@ function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRe
     if (!room.isPlayerAdmin(player)) throw new InvalidPermission("You don't have the permission to start the room");
     if (room.state !== RoomState.LOBBY) throw new InvalidState("The room must be in the LOBBY state");
 
-    const roomConfig: IRoomConfig = DataStartRequestSchema.parse(message.data);
-    if (roomConfig.maxPlayer < room.players.length) throw new InvalidParameterValue("The maxPlayer parameter is smaller than the number of players in the room");
+    const newRoomConfig: IRoomConfig = DataStartRequestSchema.parse(message.data);
+    if (room.players.length < 2) throw new InvalidState("Invalid minimum number of players");
+    if (newRoomConfig.maxPlayer < room.players.length) throw new InvalidParameterValue("The maxPlayer parameter is smaller than the number of players in the room");
 
-    room.roomConfig = roomConfig;
+    room.roomConfig = newRoomConfig;
 
     const responseStart: ISocketMessageResponse = {
         channel: GameSocketChannel.START,
-        data: roomConfig
+        data: room.roomConfig
     };
 
     startGame(room);
@@ -284,7 +286,7 @@ function checkInitAndGetRoom(socketUser: SocketUser): [IPlayer, Room] {
     return [player, room];
 }
 
-function broadcastMessage(room: Room, message: string, ignorePlayersId: string[] = []) {
+export function broadcastMessage(room: Room, message: string, ignorePlayersId: string[] = []) {
     room.players.forEach((otherPlayer: IPlayer) => {
         const otherPlayerId = otherPlayer.playerId;
         if (ignorePlayersId.includes(otherPlayerId)) return;

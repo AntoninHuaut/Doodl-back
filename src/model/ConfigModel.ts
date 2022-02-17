@@ -16,6 +16,9 @@ export interface IRoomServerConfig {
     maxMaxPlayer: number;
     minTimeByTurn: number;
     maxTimeByTurn: number;
+    minRoundByGame: number;
+    maxRoundByGame: number;
+
     maxChatMessageLength: number;
     minPointGuess: number;
     maxPointGuess: number;

@@ -2,12 +2,16 @@ import Round from './round/Round.ts';
 import ClassicRound from './round/ClassicRound.ts';
 import {GameMode, IMessage, IPlayer, IRoomConfig, IRoomStatus, RoomState} from './GameModel.ts';
 import InvalidState from './exception/InvalidState.ts';
+import {broadcastMessage, getISocketMessageResponse} from "../resource/socket/GameSocketResource.ts";
+import {loggerService} from "../server.ts";
 
 export class Room {
 
     static readonly DEFAULT_GAMEMODE: GameMode = GameMode.CLASSIC;
     static readonly DEFAULT_MAX_PLAYERS: number = 16;
     static readonly DEFAULT_ROUND_TIME_DURATION: number = 90;
+    static readonly DEFAULT_ROUND_BY_GAME: number = 5;
+
 
     #roomId: string;
     #playerAdminId: string | undefined = undefined;
@@ -24,7 +28,8 @@ export class Room {
         this.#roomConfig = {
             gameMode: Room.DEFAULT_GAMEMODE,
             maxPlayer: Room.DEFAULT_MAX_PLAYERS,
-            timeByTurn: Room.DEFAULT_ROUND_TIME_DURATION
+            timeByTurn: Room.DEFAULT_ROUND_TIME_DURATION,
+            roundByGame: Room.DEFAULT_ROUND_BY_GAME
         };
         this.#round = new ClassicRound(this, null, []);
         this.#state = RoomState.LOBBY;
@@ -33,6 +38,8 @@ export class Room {
     }
 
     #createRound() {
+        loggerService.debug(`Room::createRound - Room (${this.#roomId})`);
+
         switch (this.#roomConfig.gameMode) {
             case GameMode.CLASSIC:
                 this.#round = new ClassicRound(this, null, []);
@@ -61,13 +68,18 @@ export class Room {
     }
 
     startGame() {
+        loggerService.debug(`Room::startGame - Room (${this.#roomId})`);
+
+        this.#createRound();
+        this.players.forEach(player => player.point = 0);
         this.state = RoomState.INGAME;
         this.round.startRound();
     }
 
-    resetGame() {
-        this.#createRound();
-        this.players.forEach(player => player.point = 0); // TODO test
+    endGame() {
+        this.round.endRound();
+        this.state = RoomState.LOBBY;
+        broadcastMessage(this, JSON.stringify(getISocketMessageResponse(this)))
     }
 
     set roomConfig(config: IRoomConfig) {
@@ -76,7 +88,6 @@ export class Room {
         this.#roomConfig = config;
         this.#createRound();
     }
-
 
     set state(state: RoomState) {
         this.#state = state;
@@ -121,6 +132,7 @@ export class Room {
     set playerAdminId(playerAdminId: string | undefined) {
         this.#playerAdminId = playerAdminId;
     }
+
     get playerAdminId() {
         return this.#playerAdminId;
     }
