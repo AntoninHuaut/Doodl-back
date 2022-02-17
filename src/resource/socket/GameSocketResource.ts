@@ -1,11 +1,12 @@
 import {z} from "../../deps.ts";
 import {
+    GameSocketChannel,
     IDataChatRequest,
     IDataDrawResponse,
+    IDataGuestResponse,
     IDataInitRequest,
     ISocketMessageRequest,
     ISocketMessageResponse,
-    GameSocketChannel,
     SocketUser
 } from '../../model/GameSocketModel.ts';
 import {loggerService} from '../../server.ts';
@@ -133,9 +134,6 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
                 safeSend(socketUser, JSON.stringify({channel: GameSocketChannel.PONG}));
                 break;
             }
-            case GameSocketChannel.PONG: {
-                break;
-            }
             case GameSocketChannel.INIT: {
                 onMessageInitChannel(socketUser, message);
                 break;
@@ -154,6 +152,10 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
             }
             case GameSocketChannel.START: {
                 onMessageStartChannel(socketUser, message);
+                break;
+            }
+            case GameSocketChannel.GUESS:
+            case GameSocketChannel.PONG: {
                 break;
             }
             default: {
@@ -200,22 +202,31 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
     const [player, room] = checkInitAndGetRoom(socketUser);
     const chatMessage: IDataChatRequest = DataChatRequestSchema.parse(message.data);
 
-    room.round.handleChatMessage(chatMessage, () => {
-        const chatResponse: IMessage | undefined = getValidChatMessage(player, chatMessage.message);
-        if (!chatResponse) return;
+    room.round.handleChatMessage(player, chatMessage, (guessData: IDataGuestResponse | undefined) => {
+        if (guessData) {
+            room.playersId.forEach((otherPlayerId: string) => {
+                const otherSocketUser = sockets.get(otherPlayerId);
+                if (otherSocketUser != null) {
+                    safeSend(otherSocketUser, JSON.stringify(guessData));
+                }
+            });
+        } else {
+            const chatResponse: IMessage | undefined = getValidChatMessage(player, chatMessage.message);
+            if (!chatResponse) return;
 
-        const responseChatMessage: ISocketMessageResponse = {
-            channel: GameSocketChannel.CHAT,
-            data: chatResponse
-        };
+            const responseChatMessage: ISocketMessageResponse = {
+                channel: GameSocketChannel.CHAT,
+                data: chatResponse
+            };
 
-        room.addMessage(chatResponse);
-        room.playersId.forEach((otherPlayerId: string) => {
-            const otherSocketUser = sockets.get(otherPlayerId);
-            if (otherSocketUser != null) {
-                safeSend(otherSocketUser, JSON.stringify(responseChatMessage));
-            }
-        });
+            room.addMessage(chatResponse);
+            room.playersId.forEach((otherPlayerId: string) => {
+                const otherSocketUser = sockets.get(otherPlayerId);
+                if (otherSocketUser != null) {
+                    safeSend(otherSocketUser, JSON.stringify(responseChatMessage));
+                }
+            });
+        }
     });
 }
 

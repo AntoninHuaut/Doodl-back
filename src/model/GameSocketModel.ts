@@ -52,6 +52,15 @@ export interface IDataInfoResponse {
 // IDataStartRequest = IRoomConfig
 // IDataStartResponse = Not stated (IRoomConfig tmp) // TODO
 
+// IDataGuessRequest doesn't exist
+export interface IDataGuestResponse {
+    guessGainPoint: number;
+    drawGainPoint: number;
+    guesser: IPlayer;
+    playerList: IPlayer[];
+    playerTurn: IPlayer[];
+}
+
 export enum GameSocketChannel {
     PING = "PING",
     PONG = "PONG",
@@ -59,5 +68,6 @@ export enum GameSocketChannel {
     CHAT = "CHAT",
     DRAW = "DRAW",
     INFO = "INFO",
-    START = "START"
+    START = "START",
+    GUESS = "GUESS"
 }

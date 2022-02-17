@@ -1,76 +1,84 @@
 import {DrawTool, IDraw, IPlayer} from '../GameModel.ts';
-import {IDataChatRequest} from '../GameSocketModel.ts';
+import {IDataChatRequest, IDataGuestResponse} from '../GameSocketModel.ts';
 import {Room} from "../Room.ts";
 import InvalidState from "../exception/InvalidState.ts";
 import {getRandomWord} from "../../core/WordManager.ts";
 
 export default abstract class Round {
 
-    #room: Room;
-    #word: string | undefined;
-    #dateStartedDrawing: Date | null;
-    #playerTurn: IPlayer[];
-    #draws: IDraw[];
+    protected _room: Room;
+    protected _word: string | undefined;
+    protected _dateStartedDrawing: Date | null;
+    protected _playerTurn: IPlayer[];
+    protected _draws: IDraw[];
 
     protected constructor(room: Room, dateStartedDrawing: Date | null, playerTurn: IPlayer[]) {
-        this.#room = room;
-        this.#dateStartedDrawing = dateStartedDrawing;
-        this.#playerTurn = playerTurn;
-        this.#draws = [];
+        this._room = room;
+        this._dateStartedDrawing = dateStartedDrawing;
+        this._playerTurn = playerTurn;
+        this._draws = [];
     }
 
     startRound() {
         this.#setNextPlayerTurn();
-        this.#word = getRandomWord();
-        this.#dateStartedDrawing = new Date();
+        this._word = getRandomWord();
+        this._dateStartedDrawing = new Date();
     }
 
     addDraw(draw: IDraw) {
         if (draw.tool !== DrawTool.CLEAR) {
-            this.#draws.push(draw);
+            this._draws.push(draw);
         } else {
-            this.#draws.length = 0;
+            this._draws.length = 0;
         }
     }
 
-    handleChatMessage(message: IDataChatRequest, broadcastMessageFunc: () => void) {
-        if (message.message === this.#word) {
-            // TODO win points + link player to message in arg
+    handleChatMessage(author: IPlayer, message: IDataChatRequest, broadcastMessageFunc: (_guessData: IDataGuestResponse | undefined) => void) {
+        const hasGuess = this.isGameStarted() && message.message === this._word;
+        if (hasGuess) {
+            const guestData: IDataGuestResponse = this.guessWord(author);
+            broadcastMessageFunc(guestData);
         } else {
-            broadcastMessageFunc();
+            broadcastMessageFunc(undefined);
         }
+    }
+
+    protected abstract guessWord(guessPlayer: IPlayer): IDataGuestResponse;
+
+    isGameStarted(): boolean {
+        return this._dateStartedDrawing !== null && this._word !== null;
     }
 
     #setNextPlayerTurn() {
         if (!this.playerTurn?.length) {
             this.playerTurn.push(this.#getRandomPlayer());
         } else {
-            const currentIndex = this.#room.players.indexOf(this.playerTurn[0]);
-            const nextIndex = (currentIndex + 1) % this.#room.players.length;
+            const currentIndex = this._room.players.indexOf(this.playerTurn[0]);
+            const nextIndex = (currentIndex + 1) % this._room.players.length;
             this.playerTurn.length = 0;
-            this.playerTurn.push(this.#room.players[nextIndex]);
+            this.playerTurn.push(this._room.players[nextIndex]);
         }
     }
 
     canPlayerDraw(player: IPlayer): boolean {
-        return this.#playerTurn.includes(player);
+        return this._playerTurn.includes(player);
     }
 
     #getRandomPlayer(): IPlayer {
-        if (!this.#room.players) throw new InvalidState("PlayerList can't be empty"); // TODO stop game ?
+        if (!this._room.players) throw new InvalidState("PlayerList can't be empty"); // TODO stop game ?
 
-        return this.#room.players[Math.floor((Math.random() * this.#room.players.length))];
+        return this._room.players[Math.floor((Math.random() * this._room.players.length))];
     }
 
     get dateStartedDrawing() {
-        return this.#dateStartedDrawing;
+        return this._dateStartedDrawing;
     }
 
     get playerTurn() {
-        return this.#playerTurn;
+        return this._playerTurn;
     }
 
     get draws() {
-        return this.#draws;
+        return this._draws;
     }
 }
