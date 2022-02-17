@@ -22,9 +22,7 @@ export default class ClassicRound extends Round {
         return {
             guessGainPoint: guessGainPoint,
             drawGainPoint: drawGainPoint,
-            guesser: guessPlayer,
-            playerList: this._room.players,
-            playerTurn: this._playerTurn
+            guesser: guessPlayer
         }
     }
 

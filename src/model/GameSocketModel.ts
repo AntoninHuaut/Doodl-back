@@ -58,8 +58,6 @@ export interface IDataGuestResponse {
     guessGainPoint: number;
     drawGainPoint: number;
     guesser: IPlayer;
-    playerList: IPlayer[];
-    playerTurn: IPlayer[];
 }
 
 export enum GameSocketChannel {
