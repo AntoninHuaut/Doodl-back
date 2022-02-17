@@ -46,6 +46,7 @@ export interface IDataDrawResponse extends IDraw {
 export interface IDataInfoResponse {
     roomState: RoomState;
     playerList: IPlayer[];
+    playerTurn: IPlayer[];
     roomConfig: IRoomConfig;
 }
 

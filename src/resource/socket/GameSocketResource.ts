@@ -244,6 +244,7 @@ function onMessageInfoChannel(socketUser: SocketUser) {
         data: {
             roomState: room.state,
             playerList: room.players,
+            playerTurn: room.round.playerTurn,
             roomConfig: room.roomConfig
         }
     };
