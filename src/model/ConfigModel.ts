@@ -17,4 +17,6 @@ export interface IRoomServerConfig {
     minTimeByTurn: number;
     maxTimeByTurn: number;
     maxChatMessageLength: number;
+    minPointGuess: number;
+    maxPointGuess: number;
 }

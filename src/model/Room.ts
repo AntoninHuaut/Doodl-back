@@ -26,8 +26,7 @@ export class Room {
             maxPlayer: Room.DEFAULT_MAX_PLAYERS,
             timeByTurn: Room.DEFAULT_ROUND_TIME_DURATION
         };
-        this.#round = new ClassicRound(null, []);
-
+        this.#round = new ClassicRound(this, null, []);
         this.#state = RoomState.LOBBY;
         this.#players = [];
         this.#messages = [];
@@ -36,7 +35,7 @@ export class Room {
     #createRound() {
         switch (this.#roomConfig.gameMode) {
             case GameMode.CLASSIC:
-                this.#round = new ClassicRound(null, []);
+                this.#round = new ClassicRound(this, null, []);
                 break;
             default:
                 this.#roomConfig.gameMode = Room.DEFAULT_GAMEMODE;
@@ -61,12 +60,14 @@ export class Room {
         this.#messages.push(message);
     }
 
-    set state(state: RoomState) {
-        this.#state = state;
+    startGame() {
+        this.state = RoomState.INGAME;
+        this.round.startRound();
     }
 
-    get state(): RoomState {
-        return this.#state
+    resetGame() {
+        this.#createRound();
+        this.players.forEach(player => player.point = 0); // TODO test
     }
 
     set config(config: IRoomConfig) {
@@ -74,6 +75,15 @@ export class Room {
 
         this.#roomConfig = config;
         this.#createRound();
+    }
+
+
+    set state(state: RoomState) {
+        this.#state = state;
+    }
+
+    get state(): RoomState {
+        return this.#state
     }
 
     get config(): IRoomConfig {
@@ -115,7 +125,6 @@ export class Room {
     set playerAdminId(playerAdminId: string | undefined) {
         this.#playerAdminId = playerAdminId;
     }
-
     get playerAdminId() {
         return this.#playerAdminId;
     }

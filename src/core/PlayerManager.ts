@@ -13,7 +13,8 @@ export function createPlayer(socketUser: SocketUser, dataInit: IDataInitRequest)
     const player: IPlayer = {
         playerId: socketUser.socketUUID,
         name: dataInit.name,
-        imgUrl: dataInit.imgUrl
+        imgUrl: dataInit.imgUrl,
+        point: 0
     };
 
     addPlayerToRoom(player, room);

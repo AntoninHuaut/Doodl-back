@@ -8,6 +8,7 @@ export interface IPlayer {
     name: string;
     imgUrl: string;
     playerId: string;
+    point: number;
 }
 
 export interface IRoomStatus {

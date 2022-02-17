@@ -1,4 +1,5 @@
 scripts:
   start: "deno run --allow-net --allow-read --allow-write --allow-run --allow-env src/app.ts"
   dev: "deno run --allow-net --allow-read --allow-write --allow-run --allow-env --watch src/app.ts"
+  test: "deno test test/points.ts"
   update: "udd src/deps.ts"

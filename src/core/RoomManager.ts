@@ -43,7 +43,7 @@ export function removePlayerIdToRoom(playerId: string, room: Room) {
 
 export function startGame(room: Room) {
     loggerService.debug(`Start game (${room.roomId})`);
-    room.state = RoomState.INGAME;
+    room.startGame();
 }
 
 export function getRoomList(): Room[] {
