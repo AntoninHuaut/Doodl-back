@@ -8,16 +8,8 @@ import {
     IAdminSocketMessage
 } from "../../model/AdminSocketModel.ts";
 import {getRoomList} from "../../core/RoomManager.ts";
-import {broadcastMessage, getSocketsCount} from "./GameSocketResource.ts";
+import {getSocketsCount} from "./GameSocketResource.ts";
 import {z} from "https://deno.land/x/zod@v3.11.6/index.ts";
-import {
-    GameSocketChannel,
-    IDataDrawResponse,
-    ISocketMessageRequest,
-    ISocketMessageResponse,
-    SocketUser
-} from "../../model/GameSocketModel.ts";
-import {IDraw} from "../../model/GameModel.ts";
 
 const DataDeletePlayerSchema: z.ZodSchema<IAdminSocketDeletePlayerRequest> = z.object({
     playerId: z.string()
@@ -125,17 +117,8 @@ function sendGlobalData(socket: WebSocket) {
     safeSend(socket, JSON.stringify(connectResponse));
 }
 
-function onDeletePlayerMessage(socketUser: SocketUser, message: ISocketMessageRequest) {
-    const drawMessage: IDraw = DataDrawRequestSchema.parse(message.data);
-    const drawMessageEnhance: IDataDrawResponse = {...drawMessage, draftsman: player};
-
-    const responseDraw: ISocketMessageResponse = {
-        channel: GameSocketChannel.DRAW,
-        data: drawMessageEnhance
-    };
-
-    room.round.addDraw(drawMessage);
-    broadcastMessage(room, JSON.stringify(responseDraw), [socketUser.socketUUID]);
+function onDeletePlayerMessage(socketUser: WebSocket, message: IAdminSocketMessage) {
+    // TODO
 }
 
 function safeSend(socket: WebSocket, message: string) {

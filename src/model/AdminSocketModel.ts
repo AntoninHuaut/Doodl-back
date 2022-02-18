@@ -20,7 +20,7 @@ export interface IAdminRoomInfo {
     drawCount: number;
 }
 
-export interface IAdminSocketDeletePlayerRequest extends IAdminSocketMessage {
+export interface IAdminSocketDeletePlayerRequest {
     playerId: string;
 }
 
