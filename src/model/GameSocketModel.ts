@@ -68,6 +68,7 @@ export enum GameSocketChannel {
     CHAT = "CHAT",
     DRAW = "DRAW",
     INFO = "INFO",
+    CONFIG = "CONFIG",
     START = "START",
     GUESS = "GUESS"
 }

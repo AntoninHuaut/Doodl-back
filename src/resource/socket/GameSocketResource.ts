@@ -150,8 +150,12 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
                 onMessageInfoChannel(socketUser);
                 break;
             }
+            case GameSocketChannel.CONFIG: {
+                onMessageConfigChannel(socketUser, message);
+                break;
+            }
             case GameSocketChannel.START: {
-                onMessageStartChannel(socketUser, message);
+                onMessageStartChannel(socketUser);
                 break;
             }
             case GameSocketChannel.GUESS:
@@ -255,15 +259,26 @@ export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
     };
 }
 
-function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
+function onMessageConfigChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
     const [player, room] = checkInitAndGetRoom(socketUser);
     if (!room.isPlayerAdmin(player)) throw new InvalidPermission("You don't have the permission to start the room");
     if (room.state !== RoomState.LOBBY) throw new InvalidState("The room must be in the LOBBY state");
 
-    const newRoomConfig: IRoomConfig = DataStartRequestSchema.parse(message.data);
-    if (room.players.length < 2) throw new InvalidState("Invalid minimum number of players");
+    room.roomConfig = DataStartRequestSchema.parse(message.data);
 
-    room.roomConfig = newRoomConfig;
+    const responseConfig: ISocketMessageResponse = {
+        channel: GameSocketChannel.CONFIG,
+        data: room.roomConfig
+    };
+
+    broadcastMessage(room, JSON.stringify(responseConfig));
+}
+
+function onMessageStartChannel(socketUser: SocketUser) {
+    const [player, room] = checkInitAndGetRoom(socketUser);
+    if (!room.isPlayerAdmin(player)) throw new InvalidPermission("You don't have the permission to start the room");
+    if (room.state !== RoomState.LOBBY) throw new InvalidState("The room must be in the LOBBY state");
+    if (room.players.length < 2) throw new InvalidState("Invalid minimum number of players");
 
     const responseStart: ISocketMessageResponse = {
         channel: GameSocketChannel.START,
