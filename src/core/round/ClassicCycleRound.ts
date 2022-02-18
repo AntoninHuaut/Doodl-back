@@ -1,11 +1,11 @@
-import Round from './Round.ts';
+import CycleRound from './CycleRound.ts';
 import {IPlayer} from '../../model/GameModel.ts';
 import {Room} from "../Room.ts";
 import {getGuessPoint} from "../WordManager.ts";
 import {IDataGuestResponse} from "../../model/GameSocketModel.ts";
 import {loggerService} from "../../server.ts";
 
-export default class ClassicRound extends Round {
+export default class ClassicCycleRound extends CycleRound {
 
     constructor(room: Room, dateStartedDrawing: Date | null, playerTurn: IPlayer[]) {
         super(room, dateStartedDrawing, playerTurn)

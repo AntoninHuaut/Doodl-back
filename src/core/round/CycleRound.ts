@@ -5,7 +5,7 @@ import {getRandomWord} from "../WordManager.ts";
 import {loggerService} from "../../server.ts";
 import {appRoomConfig} from "../../config.ts";
 
-export default abstract class Round {
+export default abstract class CycleRound {
 
     protected _room: Room;
     protected _dateStartedDrawing: Date | null;
@@ -61,6 +61,10 @@ export default abstract class Round {
         this._playersGuess.length = 0;
         this._word = null;
 
+        this.#clearRoundInterval();
+    }
+
+    #clearRoundInterval() {
         if (this._intervalId) {
             clearInterval(this._intervalId);
             this._intervalId = null;
@@ -115,6 +119,7 @@ export default abstract class Round {
 
         if (roundOver) {
             loggerService.debug(`Round::isRoundOver - Room (${this._room.roomId}) - round over`);
+            this.#clearRoundInterval();
 
             const delay = 5 * 1000;
             // TODO end round websocket with ${delay} ms

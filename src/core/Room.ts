@@ -1,5 +1,5 @@
-import Round from './round/Round.ts';
-import ClassicRound from './round/ClassicRound.ts';
+import CycleRound from './round/CycleRound.ts';
+import ClassicCycleRound from './round/ClassicCycleRound.ts';
 import {GameMode, IMessage, IPlayer, IRoomConfig, IRoomStatus, RoomState} from '../model/GameModel.ts';
 import InvalidState from '../model/exception/InvalidState.ts';
 import {broadcastMessage, getISocketMessageResponse} from "../resource/socket/GameSocketResource.ts";
@@ -18,7 +18,7 @@ export class Room {
     #players: IPlayer[];
     #messages: IMessage[];
 
-    #round: Round;
+    #round: CycleRound;
     #state: RoomState;
     #roomConfig: IRoomConfig;
 
@@ -29,7 +29,7 @@ export class Room {
             timeByTurn: Room.DEFAULT_ROUND_TIME_DURATION,
             cycleRoundByGame: Room.DEFAULT_CYCLE_ROUND_BY_GAME
         };
-        this.#round = new ClassicRound(this, null, []);
+        this.#round = new ClassicCycleRound(this, null, []);
         this.#state = RoomState.LOBBY;
         this.#players = [];
         this.#messages = [];
@@ -40,7 +40,7 @@ export class Room {
 
         switch (this.#roomConfig.gameMode) {
             case GameMode.CLASSIC:
-                this.#round = new ClassicRound(this, null, []);
+                this.#round = new ClassicCycleRound(this, null, []);
                 break;
             default:
                 this.#roomConfig.gameMode = Room.DEFAULT_GAMEMODE;
@@ -76,6 +76,8 @@ export class Room {
     }
 
     endGame() {
+        loggerService.debug(`Room::endGame - Room (${this.#roomId})`);
+
         this.round.endRound();
         this.state = RoomState.LOBBY;
         broadcastMessage(this, JSON.stringify(getISocketMessageResponse(this)))
@@ -120,7 +122,7 @@ export class Room {
         return this.#messages;
     }
 
-    get round(): Round {
+    get round(): CycleRound {
         return this.#round;
     }
 
