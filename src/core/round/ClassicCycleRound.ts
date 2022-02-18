@@ -2,7 +2,7 @@ import CycleRound from './CycleRound.ts';
 import {IPlayer} from '../../model/GameModel.ts';
 import {Room} from "../Room.ts";
 import {getGuessPoint} from "../WordManager.ts";
-import {IDataGuestResponse} from "../../model/GameSocketModel.ts";
+import {IDataGuessResponse} from "../../model/GameSocketModel.ts";
 import {loggerService} from "../../server.ts";
 
 export default class ClassicCycleRound extends CycleRound {
@@ -11,7 +11,7 @@ export default class ClassicCycleRound extends CycleRound {
         super(room, dateStartedDrawing, playerTurn)
     }
 
-    protected override guessWord(guessPlayer: IPlayer): IDataGuestResponse {
+    protected override guessWord(guessPlayer: IPlayer): IDataGuessResponse {
         loggerService.debug(`ClassicRound::guessWord - Room (${this._room.roomId}) - Player (${guessPlayer.playerId})`);
 
         this._playersGuess.push(guessPlayer);

@@ -3,7 +3,7 @@ import {
     GameSocketChannel,
     IDataChatRequest,
     IDataDrawResponse,
-    IDataGuestResponse,
+    IDataGuessResponse,
     IDataInitRequest,
     ISocketMessageRequest,
     ISocketMessageResponse,
@@ -51,7 +51,7 @@ const DataDrawRequestSchema: z.ZodSchema<IDraw> = z.object({
     color: z.string().optional(),
     lineWidth: z.number().optional()
 });
-const DataStartRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
+const DataConfigRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
     gameMode: z.nativeEnum(GameMode),
     timeByTurn: z.number().min(appRoomConfig.minTimeByTurn).max(appRoomConfig.maxTimeByTurn),
     cycleRoundByGame: z.number().min(appRoomConfig.minCycleRoundByGame).max(appRoomConfig.maxCycleRoundByGame)
@@ -59,7 +59,7 @@ const DataStartRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
 
 const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object({
     channel: z.nativeEnum(GameSocketChannel),
-    data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawRequestSchema).or(DataStartRequestSchema).optional()
+    data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawRequestSchema).or(DataConfigRequestSchema).optional()
 });
 
 const sockets = new Map<string, SocketUser>();
@@ -150,8 +150,12 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
                 onMessageInfoChannel(socketUser);
                 break;
             }
+            case GameSocketChannel.CONFIG: {
+                onMessageConfigChannel(socketUser, message);
+                break;
+            }
             case GameSocketChannel.START: {
-                onMessageStartChannel(socketUser, message);
+                onMessageStartChannel(socketUser);
                 break;
             }
             case GameSocketChannel.GUESS:
@@ -203,7 +207,7 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
     const [player, room] = checkInitAndGetRoom(socketUser);
     const chatMessage: IDataChatRequest = DataChatRequestSchema.parse(message.data);
 
-    room.round.handleChatMessage(player, chatMessage, (guessData: IDataGuestResponse | undefined) => {
+    room.round.handleChatMessage(player, chatMessage, (guessData: IDataGuessResponse | undefined) => {
         if (guessData) {
             broadcastMessage(room, JSON.stringify(guessData));
         } else {
@@ -255,15 +259,26 @@ export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
     };
 }
 
-function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
+function onMessageConfigChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
     const [player, room] = checkInitAndGetRoom(socketUser);
     if (!room.isPlayerAdmin(player)) throw new InvalidPermission("You don't have the permission to start the room");
     if (room.state !== RoomState.LOBBY) throw new InvalidState("The room must be in the LOBBY state");
 
-    const newRoomConfig: IRoomConfig = DataStartRequestSchema.parse(message.data);
-    if (room.players.length < 2) throw new InvalidState("Invalid minimum number of players");
+    room.roomConfig = DataConfigRequestSchema.parse(message.data);
 
-    room.roomConfig = newRoomConfig;
+    const responseConfig: ISocketMessageResponse = {
+        channel: GameSocketChannel.CONFIG,
+        data: room.roomConfig
+    };
+
+    broadcastMessage(room, JSON.stringify(responseConfig));
+}
+
+function onMessageStartChannel(socketUser: SocketUser) {
+    const [player, room] = checkInitAndGetRoom(socketUser);
+    if (!room.isPlayerAdmin(player)) throw new InvalidPermission("You don't have the permission to start the room");
+    if (room.state !== RoomState.LOBBY) throw new InvalidState("The room must be in the LOBBY state");
+    if (room.players.length < 2) throw new InvalidState("Invalid minimum number of players");
 
     const responseStart: ISocketMessageResponse = {
         channel: GameSocketChannel.START,
