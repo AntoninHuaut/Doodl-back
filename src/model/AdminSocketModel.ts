@@ -2,7 +2,10 @@ import {IPlayer} from "./GameModel.ts";
 
 export interface IAdminSocketMessage {
     channel: AdminSocketChannel;
-    data?: DataDeletePlayerSchema;
+}
+
+export interface IAdminSocketMessageRequest extends IAdminSocketMessage {
+    data?: IAdminSocketDeletePlayerRequest;
 }
 
 export interface IAdminSocketConnectResponse extends IAdminSocketMessage {
