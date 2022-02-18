@@ -51,7 +51,7 @@ const DataDrawRequestSchema: z.ZodSchema<IDraw> = z.object({
     color: z.string().optional(),
     lineWidth: z.number().optional()
 });
-const DataStartRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
+const DataConfigRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
     gameMode: z.nativeEnum(GameMode),
     timeByTurn: z.number().min(appRoomConfig.minTimeByTurn).max(appRoomConfig.maxTimeByTurn),
     cycleRoundByGame: z.number().min(appRoomConfig.minCycleRoundByGame).max(appRoomConfig.maxCycleRoundByGame)
@@ -59,7 +59,7 @@ const DataStartRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
 
 const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object({
     channel: z.nativeEnum(GameSocketChannel),
-    data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawRequestSchema).or(DataStartRequestSchema).optional()
+    data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawRequestSchema).or(DataConfigRequestSchema).optional()
 });
 
 const sockets = new Map<string, SocketUser>();
@@ -264,7 +264,7 @@ function onMessageConfigChannel(socketUser: SocketUser, message: ISocketMessageR
     if (!room.isPlayerAdmin(player)) throw new InvalidPermission("You don't have the permission to start the room");
     if (room.state !== RoomState.LOBBY) throw new InvalidState("The room must be in the LOBBY state");
 
-    room.roomConfig = DataStartRequestSchema.parse(message.data);
+    room.roomConfig = DataConfigRequestSchema.parse(message.data);
 
     const responseConfig: ISocketMessageResponse = {
         channel: GameSocketChannel.CONFIG,
