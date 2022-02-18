@@ -45,12 +45,21 @@ export interface IDataDrawResponse extends IDraw {
 // IDataInfoRequest is empty
 export interface IDataInfoResponse {
     roomState: RoomState;
+    playerAdminId: string | undefined;
     playerList: IPlayer[];
+    playerTurn: IPlayer[];
     roomConfig: IRoomConfig;
 }
 
 // IDataStartRequest = IRoomConfig
-// IDataStartResponse = Not stated (IRoomConfig tmp) // TODO
+// IDataStartResponse = IRoomConfig on success
+
+// IDataGuessRequest doesn't exist
+export interface IDataGuestResponse {
+    guessGainPoint: number;
+    drawGainPoint: number;
+    guesser: IPlayer;
+}
 
 export enum GameSocketChannel {
     PING = "PING",
@@ -59,5 +68,6 @@ export enum GameSocketChannel {
     CHAT = "CHAT",
     DRAW = "DRAW",
     INFO = "INFO",
-    START = "START"
+    START = "START",
+    GUESS = "GUESS"
 }

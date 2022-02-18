@@ -1,17 +1,18 @@
 import {z} from "../../deps.ts";
 import {
+    GameSocketChannel,
     IDataChatRequest,
     IDataDrawResponse,
+    IDataGuestResponse,
     IDataInitRequest,
     ISocketMessageRequest,
     ISocketMessageResponse,
-    GameSocketChannel,
     SocketUser
 } from '../../model/GameSocketModel.ts';
 import {loggerService} from '../../server.ts';
 import {createPlayer, deletePlayer} from '../../core/PlayerManager.ts';
 import {getRoomById, startGame} from '../../core/RoomManager.ts';
-import {Room} from '../../model/Room.ts';
+import {Room} from '../../core/Room.ts';
 import InvalidParameterValue from '../../model/exception/InvalidParameterValue.ts';
 import SocketInitNotPerformed from '../../model/exception/SocketInitNotPerformed.ts';
 import {getValidChatMessage} from '../../core/validator/ChatMessageValidator.ts';
@@ -53,7 +54,7 @@ const DataDrawRequestSchema: z.ZodSchema<IDraw> = z.object({
 const DataStartRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
     gameMode: z.nativeEnum(GameMode),
     timeByTurn: z.number().min(appRoomConfig.minTimeByTurn).max(appRoomConfig.maxTimeByTurn),
-    maxPlayer: z.number().min(appRoomConfig.minMaxPlayer).max(appRoomConfig.maxMaxPlayer)
+    cycleRoundByGame: z.number().min(appRoomConfig.minCycleRoundByGame).max(appRoomConfig.maxCycleRoundByGame)
 });
 
 const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object({
@@ -133,9 +134,6 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
                 safeSend(socketUser, JSON.stringify({channel: GameSocketChannel.PONG}));
                 break;
             }
-            case GameSocketChannel.PONG: {
-                break;
-            }
             case GameSocketChannel.INIT: {
                 onMessageInitChannel(socketUser, message);
                 break;
@@ -149,11 +147,15 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
                 break;
             }
             case GameSocketChannel.INFO: {
-                onMessageInfoChannel(socketUser, message);
+                onMessageInfoChannel(socketUser);
                 break;
             }
             case GameSocketChannel.START: {
                 onMessageStartChannel(socketUser, message);
+                break;
+            }
+            case GameSocketChannel.GUESS:
+            case GameSocketChannel.PONG: {
                 break;
             }
             default: {
@@ -194,28 +196,28 @@ function onMessageInitChannel(socketUser: SocketUser, message: ISocketMessageReq
         }
     };
     safeSend(socketUser, JSON.stringify(responseInitMessage));
+    onMessageInfoChannel(socketUser);
 }
 
 function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
     const [player, room] = checkInitAndGetRoom(socketUser);
     const chatMessage: IDataChatRequest = DataChatRequestSchema.parse(message.data);
 
-    room.round.handleChatMessage(chatMessage, () => {
-        const chatResponse: IMessage | undefined = getValidChatMessage(player, chatMessage.message);
-        if (!chatResponse) return;
+    room.round.handleChatMessage(player, chatMessage, (guessData: IDataGuestResponse | undefined) => {
+        if (guessData) {
+            broadcastMessage(room, JSON.stringify(guessData));
+        } else {
+            const chatResponse: IMessage | undefined = getValidChatMessage(player, chatMessage.message);
+            if (!chatResponse) return;
 
-        const responseChatMessage: ISocketMessageResponse = {
-            channel: GameSocketChannel.CHAT,
-            data: chatResponse
-        };
+            const responseChatMessage: ISocketMessageResponse = {
+                channel: GameSocketChannel.CHAT,
+                data: chatResponse
+            };
 
-        room.addMessage(chatResponse);
-        room.playersId.forEach((otherPlayerId: string) => {
-            const otherSocketUser = sockets.get(otherPlayerId);
-            if (otherSocketUser != null) {
-                safeSend(otherSocketUser, JSON.stringify(responseChatMessage));
-            }
-        });
+            room.addMessage(chatResponse);
+            broadcastMessage(room, JSON.stringify(responseChatMessage));
+        }
     });
 }
 
@@ -232,28 +234,25 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
     };
 
     room.round.addDraw(drawMessage);
-    room.playersId.forEach((otherPlayerId: string) => {
-        if (otherPlayerId == socketUser.socketUUID) return;
-
-        const otherSocketUser = sockets.get(otherPlayerId);
-        if (otherSocketUser != null) {
-            safeSend(otherSocketUser, JSON.stringify(responseDraw));
-        }
-    });
+    broadcastMessage(room, JSON.stringify(responseDraw), [socketUser.socketUUID]);
 }
 
-function onMessageInfoChannel(socketUser: SocketUser, _message: ISocketMessageRequest) {
+function onMessageInfoChannel(socketUser: SocketUser) {
     const [, room] = checkInitAndGetRoom(socketUser);
-    const responseInfo: ISocketMessageResponse = {
+    safeSend(socketUser, JSON.stringify(getISocketMessageResponse(room)));
+}
+
+export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
+    return {
         channel: GameSocketChannel.INFO,
         data: {
             roomState: room.state,
+            playerAdminId: room.playerAdminId,
             playerList: room.players,
-            roomConfig: room.config
+            playerTurn: room.round.playerTurn,
+            roomConfig: room.roomConfig
         }
     };
-
-    safeSend(socketUser, JSON.stringify(responseInfo));
 }
 
 function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
@@ -261,16 +260,19 @@ function onMessageStartChannel(socketUser: SocketUser, message: ISocketMessageRe
     if (!room.isPlayerAdmin(player)) throw new InvalidPermission("You don't have the permission to start the room");
     if (room.state !== RoomState.LOBBY) throw new InvalidState("The room must be in the LOBBY state");
 
-    const roomConfig: IRoomConfig = DataStartRequestSchema.parse(message.data);
-    room.config = roomConfig;
+    const newRoomConfig: IRoomConfig = DataStartRequestSchema.parse(message.data);
+    if (room.players.length < 2) throw new InvalidState("Invalid minimum number of players");
+
+    room.roomConfig = newRoomConfig;
 
     const responseStart: ISocketMessageResponse = {
         channel: GameSocketChannel.START,
-        data: roomConfig
+        data: room.roomConfig
     };
 
     startGame(room);
     safeSend(socketUser, JSON.stringify(responseStart));
+    broadcastMessage(room, JSON.stringify(getISocketMessageResponse(room)));
 }
 
 function checkInitAndGetRoom(socketUser: SocketUser): [IPlayer, Room] {
@@ -281,6 +283,18 @@ function checkInitAndGetRoom(socketUser: SocketUser): [IPlayer, Room] {
     if (room == null) throw new InvalidParameterValue("Invalid roomId");
 
     return [player, room];
+}
+
+export function broadcastMessage(room: Room, message: string, ignorePlayersId: string[] = []) {
+    room.players.forEach((otherPlayer: IPlayer) => {
+        const otherPlayerId = otherPlayer.playerId;
+        if (ignorePlayersId.includes(otherPlayerId)) return;
+
+        const otherSocketUser = sockets.get(otherPlayerId);
+        if (otherSocketUser != null) {
+            safeSend(otherSocketUser, message);
+        }
+    });
 }
 
 function safeSend(socketUser: SocketUser, message: string) {

@@ -1,13 +1,14 @@
 export interface IRoomConfig {
     gameMode: GameMode;
     timeByTurn: number;
-    maxPlayer: number;
+    cycleRoundByGame: number;
 }
 
 export interface IPlayer {
     name: string;
     imgUrl: string;
     playerId: string;
+    point: number;
 }
 
 export interface IRoomStatus {
