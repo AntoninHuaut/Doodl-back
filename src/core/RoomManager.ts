@@ -21,7 +21,7 @@ export function getRoomById(roomId: string | undefined): Room | undefined {
 }
 
 export function addPlayerToRoom(player: IPlayer, room: Room) {
-    if (room.players.length >= appRoomConfig.minPlayerPerRoom) throw new InvalidState("Room is full");
+    if (room.players.length >= appRoomConfig.maxPlayerPerRoom) throw new InvalidState("Room is full");
 
     loggerService.debug(`Adding player (${player.playerId}) to room (${room.roomId})`);
     room.addPlayer(player);
