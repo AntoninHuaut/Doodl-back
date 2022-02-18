@@ -2,7 +2,7 @@ import {IPlayer} from '../model/GameModel.ts';
 import {IDataInitRequest, SocketUser} from '../model/GameSocketModel.ts';
 import {addPlayerToRoom, getRoomById, removePlayerIdToRoom} from './RoomManager.ts';
 import InvalidParameterValue from '../model/exception/InvalidParameterValue.ts';
-import {Room} from '../model/Room.ts';
+import {Room} from './Room.ts';
 
 export function createPlayer(socketUser: SocketUser, dataInit: IDataInitRequest): IPlayer {
     const roomId = dataInit.roomId;
@@ -13,7 +13,8 @@ export function createPlayer(socketUser: SocketUser, dataInit: IDataInitRequest)
     const player: IPlayer = {
         playerId: socketUser.socketUUID,
         name: dataInit.name,
-        imgUrl: dataInit.imgUrl
+        imgUrl: dataInit.imgUrl,
+        point: 0
     };
 
     addPlayerToRoom(player, room);

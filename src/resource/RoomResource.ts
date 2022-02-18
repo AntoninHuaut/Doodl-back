@@ -23,7 +23,7 @@ export default class HomeResource extends Drash.Resource {
 
         const jsonResponse: IRoomGetResponse = {
             roomId: room.roomId,
-            config: room.config,
+            config: room.roomConfig,
             status: room.status
         };
 

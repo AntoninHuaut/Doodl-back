@@ -5,10 +5,15 @@
     "secure": false
   },
   "room": {
-    "minMaxPlayer": 2,
-    "maxMaxPlayer": 32,
+    "minPlayerPerRoom": 2,
+    "maxPlayerPerRoom": 32,
     "minTimeByTurn": 5,
     "maxTimeByTurn": 600,
-    "maxChatMessageLength": 280
+    "minCycleRoundByGame": 1,
+    "maxCycleRoundByGame": 32,
+
+    "maxChatMessageLength": 280,
+    "minPointGuess": 500,
+    "maxPointGuess": 1000
   }
 }

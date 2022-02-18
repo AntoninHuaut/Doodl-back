@@ -1,6 +1,8 @@
 import {IPlayer, RoomState} from '../model/GameModel.ts';
-import {Room} from '../model/Room.ts';
+import {Room} from './Room.ts';
 import {loggerService} from '../server.ts';
+import InvalidState from "../model/exception/InvalidState.ts";
+import {appRoomConfig} from "../config.ts";
 
 const ROOM_CODE_LENGTH = 8;
 const roomMap = new Map<string, Room>();
@@ -19,6 +21,8 @@ export function getRoomById(roomId: string | undefined): Room | undefined {
 }
 
 export function addPlayerToRoom(player: IPlayer, room: Room) {
+    if (room.players.length >= appRoomConfig.minPlayerPerRoom) throw new InvalidState("Room is full");
+
     loggerService.debug(`Adding player (${player.playerId}) to room (${room.roomId})`);
     room.addPlayer(player);
 
@@ -33,17 +37,26 @@ export function removePlayerIdToRoom(playerId: string, room: Room) {
 
     if (room.playerAdminId === playerId) {
         if (room.players.length === 0) {
-            loggerService.debug(`Room (${room.roomId}) no longer has an admin or players`);
+            loggerService.debug(`Room (${room.roomId}) no longer has players`);
             room.playerAdminId = undefined;
         } else {
             setAdmin(room.players[0].playerId, room);
         }
     }
+
+    if (room.players.length < appRoomConfig.minPlayerPerRoom) {
+        room.endGame();
+    }
 }
 
+// TODO auto delete x times after x time when player leave, reset if player join again
+
 export function startGame(room: Room) {
-    loggerService.debug(`Start game (${room.roomId})`);
-    room.state = RoomState.INGAME;
+    if (room.players.length < appRoomConfig.minPlayerPerRoom) throw new InvalidState("Invalid minimum number of players");
+    if (room.state !== RoomState.LOBBY) throw new InvalidState("Game can only be started from lobby");
+
+    loggerService.debug(`RoomManager::startGame - Room (${room.roomId})`);
+    room.startGame();
 }
 
 export function getRoomList(): Room[] {

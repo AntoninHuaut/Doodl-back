@@ -14,7 +14,5 @@ export function getValidChatMessage(player: IPlayer, message: string): IMessage 
 function isValidMessage(message: string): boolean {
     if (!message.trim() || message.length > appRoomConfig.maxChatMessageLength) return false;
 
-    // TODO
-
     return true;
 }
