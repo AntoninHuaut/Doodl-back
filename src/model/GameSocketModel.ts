@@ -16,7 +16,7 @@ export interface ISocketMessageRequest extends ISocketMessage {
 }
 
 export interface ISocketMessageResponse extends ISocketMessage {
-    data: IDataInitResponse | IMessage | IDataDrawResponse | IDataInfoResponse | IRoomConfig;
+    data: IDataInitResponse | IMessage | IDataDrawResponse | IDataInfoResponse | IRoomConfig | IDataKickResponse;
 }
 
 export interface IDataInitRequest {
@@ -60,6 +60,12 @@ export interface IDataGuessResponse {
     drawGainPoint: number;
     guesser: IPlayer;
 }
+// TODO rework guess, => INFO ?
+
+// IDataKickRequest doesn't exist
+export interface IDataKickResponse {
+    reason?: string;
+}
 
 export enum GameSocketChannel {
     PING = "PING",
@@ -70,5 +76,6 @@ export enum GameSocketChannel {
     INFO = "INFO",
     CONFIG = "CONFIG",
     START = "START",
-    GUESS = "GUESS"
+    GUESS = "GUESS",
+    KICK = "KICK"
 }

@@ -11,7 +11,6 @@ export class Room {
     static readonly DEFAULT_ROUND_TIME_DURATION: number = 90;
     static readonly DEFAULT_CYCLE_ROUND_BY_GAME: number = 5;
 
-
     #roomId: string;
     #playerAdminId: string | undefined = undefined;
 

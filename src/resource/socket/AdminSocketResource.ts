@@ -4,18 +4,18 @@ import {
     AdminSocketChannel,
     IAdminRoomInfo,
     IAdminSocketConnectResponse,
-    IAdminSocketDeletePlayerRequest,
-    IAdminSocketMessage
+    IAdminSocketDeletePlayerRequest, IAdminSocketMessage,
+    IAdminSocketMessageRequest
 } from "../../model/AdminSocketModel.ts";
 import {getRoomList} from "../../core/RoomManager.ts";
-import {getSocketsCount} from "./GameSocketResource.ts";
+import {getSocketsCount, kickPlayer} from "./GameSocketResource.ts";
 import {z} from "https://deno.land/x/zod@v3.11.6/index.ts";
 
 const DataDeletePlayerSchema: z.ZodSchema<IAdminSocketDeletePlayerRequest> = z.object({
     playerId: z.string()
 });
 
-const AdminSocketMessageRequestSchema: z.ZodSchema<IAdminSocketMessage> = z.object({
+const AdminSocketMessageRequestSchema: z.ZodSchema<IAdminSocketMessageRequest> = z.object({
     channel: z.nativeEnum(AdminSocketChannel),
     data: DataDeletePlayerSchema.optional()
 });
@@ -60,7 +60,7 @@ export default class AdminSocketResource extends WSResource {
     }
 }
 
-function handleAdminSocketMessage(socket: WebSocket, message: IAdminSocketMessage) {
+function handleAdminSocketMessage(socket: WebSocket, message: IAdminSocketMessageRequest) {
     const channel: AdminSocketChannel = message.channel;
     try {
         loggerService.debug(`WebSocket Admin - Handle channel (${channel})`);
@@ -70,7 +70,7 @@ function handleAdminSocketMessage(socket: WebSocket, message: IAdminSocketMessag
                 sendGlobalData(socket);
                 break;
             }
-            case AdminSocketChannel.DELETE_PLAYER: {
+            case AdminSocketChannel.KICK_PLAYER: {
                 onDeletePlayerMessage(socket, message);
                 break;
             }
@@ -117,8 +117,16 @@ function sendGlobalData(socket: WebSocket) {
     safeSend(socket, JSON.stringify(connectResponse));
 }
 
-function onDeletePlayerMessage(socketUser: WebSocket, message: IAdminSocketMessage) {
-    // TODO
+function onDeletePlayerMessage(socket: WebSocket, message: IAdminSocketMessageRequest) {
+    const deletePlayerRequest: IAdminSocketDeletePlayerRequest = DataDeletePlayerSchema.parse(message.data);
+    const playerId = deletePlayerRequest.playerId;
+
+    kickPlayer(playerId, "Admin kicked");
+    const kickResponse: IAdminSocketMessage = {
+        channel: AdminSocketChannel.KICK_PLAYER
+    };
+
+    safeSend(socket, JSON.stringify(kickResponse));
 }
 
 function safeSend(socket: WebSocket, message: string) {

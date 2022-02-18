@@ -29,5 +29,5 @@ export interface IAdminSocketDeletePlayerRequest {
 
 export enum AdminSocketChannel {
     GLOBAL_DATA = "GLOBAL_DATA",
-    DELETE_PLAYER = "DELETE_PLAYER"
+    KICK_PLAYER = "KICK_PLAYER"
 }

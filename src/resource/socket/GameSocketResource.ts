@@ -5,6 +5,7 @@ import {
     IDataDrawResponse,
     IDataGuessResponse,
     IDataInitRequest,
+    IDataKickResponse,
     ISocketMessageRequest,
     ISocketMessageResponse,
     SocketUser
@@ -246,19 +247,6 @@ function onMessageInfoChannel(socketUser: SocketUser) {
     safeSend(socketUser, JSON.stringify(getISocketMessageResponse(room)));
 }
 
-export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
-    return {
-        channel: GameSocketChannel.INFO,
-        data: {
-            roomState: room.state,
-            playerAdminId: room.playerAdminId,
-            playerList: room.players,
-            playerTurn: room.round.playerTurn,
-            roomConfig: room.roomConfig
-        }
-    };
-}
-
 function onMessageConfigChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
     const [player, room] = checkInitAndGetRoom(socketUser);
     if (!room.isPlayerAdmin(player)) throw new InvalidPermission("You don't have the permission to start the room");
@@ -318,4 +306,38 @@ function safeSend(socketUser: SocketUser, message: string) {
     } catch (error) {
         loggerService.error(`WebSocket ${socketUser.socketUUID ?? '??'} - ${error.stack} `);
     }
+}
+
+export function kickPlayer(playerId: string, reason: string | undefined) {
+    const socketUser: SocketUser | undefined = sockets.get(playerId);
+    if (!socketUser) return;
+
+    const socket = socketUser.socket;
+    const kickResponse: IDataKickResponse = {
+        reason: reason
+    };
+
+    try {
+        safeSend(socketUser, JSON.stringify({
+            channel: GameSocketChannel.KICK,
+            data: kickResponse
+        }));
+        socket.close(1000);
+    } catch (_ex) {
+        // Ignore
+    }
+    sockets.delete(playerId);
+}
+
+export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
+    return {
+        channel: GameSocketChannel.INFO,
+        data: {
+            roomState: room.state,
+            playerAdminId: room.playerAdminId,
+            playerList: room.players,
+            playerTurn: room.round.playerTurn,
+            roomConfig: room.roomConfig
+        }
+    };
 }
