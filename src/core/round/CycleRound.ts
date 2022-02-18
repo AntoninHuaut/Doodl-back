@@ -1,4 +1,4 @@
-import {DrawTool, IDraw, IPlayer} from '../../model/GameModel.ts';
+import {DrawTool, IDraw, IPlayer, RoomState} from '../../model/GameModel.ts';
 import {IDataChatRequest, IDataGuessResponse} from '../../model/GameSocketModel.ts';
 import {Room} from "../Room.ts";
 import {getRandomWord} from "../WordManager.ts";
@@ -17,6 +17,7 @@ export default abstract class CycleRound {
     private _word: string | null;
     private readonly _draws: IDraw[];
     private _intervalId: number | null;
+    private _timeoutNextRoundId: number | null;
 
     private _currentCycleRoundNumber = 0;
 
@@ -28,6 +29,7 @@ export default abstract class CycleRound {
         this._playersGuess = [];
         this._playerNoYetPlayedCurrentCycle = [];
         this._intervalId = null;
+        this._timeoutNextRoundId = null;
         this._word = null;
     }
 
@@ -61,17 +63,23 @@ export default abstract class CycleRound {
         this._playersGuess.length = 0;
         this._word = null;
 
-        this.#clearRoundInterval();
+        this.#clearRunnable();
     }
 
-    #clearRoundInterval() {
+    #clearRunnable() {
         if (this._intervalId) {
             clearInterval(this._intervalId);
             this._intervalId = null;
         }
+        if (this._timeoutNextRoundId) {
+            clearTimeout(this._timeoutNextRoundId);
+            this._timeoutNextRoundId = null;
+        }
     }
 
     nextRound() {
+        if (this._room.state !== RoomState.INGAME) return;
+
         loggerService.debug(`Round::nextRound - Room (${this._room.roomId})`);
 
         this.endRound()
@@ -113,17 +121,19 @@ export default abstract class CycleRound {
     protected abstract guessWord(guessPlayer: IPlayer): IDataGuessResponse;
 
     private checkRoundOver() {
+        if (this._room.state !== RoomState.INGAME) return;
+
         const timeIsOver = this._dateStartedDrawing && new Date().getTime() > this._dateStartedDrawing.getTime() + this._room.roomConfig.timeByTurn * 1000
         const allPlayerGuessed = this._room.players.filter(p => !this._playersGuess.includes(p)).length === 0;
         const roundOver: boolean = timeIsOver || this._playerTurn.length === 0 || allPlayerGuessed;
 
         if (roundOver) {
             loggerService.debug(`Round::isRoundOver - Room (${this._room.roomId}) - round over`);
-            this.#clearRoundInterval();
+            this.#clearRunnable();
 
             const delay = 5 * 1000;
             // TODO end round websocket with ${delay} ms
-            setTimeout(() => this.nextRound(), delay);
+            this._timeoutNextRoundId = setTimeout(() => this.nextRound(), delay);
         }
     }
 

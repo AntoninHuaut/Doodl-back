@@ -4,14 +4,28 @@ import {
     AdminSocketChannel,
     IAdminRoomInfo,
     IAdminSocketConnectResponse,
+    IAdminSocketDeletePlayerRequest,
     IAdminSocketMessage
 } from "../../model/AdminSocketModel.ts";
 import {getRoomList} from "../../core/RoomManager.ts";
-import {getSocketsCount} from "./GameSocketResource.ts";
+import {broadcastMessage, getSocketsCount} from "./GameSocketResource.ts";
 import {z} from "https://deno.land/x/zod@v3.11.6/index.ts";
+import {
+    GameSocketChannel,
+    IDataDrawResponse,
+    ISocketMessageRequest,
+    ISocketMessageResponse,
+    SocketUser
+} from "../../model/GameSocketModel.ts";
+import {IDraw} from "../../model/GameModel.ts";
+
+const DataDeletePlayerSchema: z.ZodSchema<IAdminSocketDeletePlayerRequest> = z.object({
+    playerId: z.string()
+});
 
 const AdminSocketMessageRequestSchema: z.ZodSchema<IAdminSocketMessage> = z.object({
-    channel: z.nativeEnum(AdminSocketChannel)
+    channel: z.nativeEnum(AdminSocketChannel),
+    data: DataDeletePlayerSchema.optional()
 });
 
 export default class AdminSocketResource extends WSResource {
@@ -45,7 +59,7 @@ export default class AdminSocketResource extends WSResource {
                 loggerService.error(`WebSocket Admin - Error handled: ${
                     JSON.stringify(this.getErrorToPrint(e), null, 2)
                 }`);
-            }
+            };
         } catch (error) {
             loggerService.error(`WebSocket Admin - Error: ${
                 JSON.stringify(error.stack, null, 2)
@@ -62,6 +76,10 @@ function handleAdminSocketMessage(socket: WebSocket, message: IAdminSocketMessag
         switch (channel) {
             case AdminSocketChannel.GLOBAL_DATA: {
                 sendGlobalData(socket);
+                break;
+            }
+            case AdminSocketChannel.DELETE_PLAYER: {
+                onDeletePlayerMessage(socket, message);
                 break;
             }
             default: {
@@ -105,6 +123,19 @@ function sendGlobalData(socket: WebSocket) {
     };
 
     safeSend(socket, JSON.stringify(connectResponse));
+}
+
+function onDeletePlayerMessage(socketUser: SocketUser, message: ISocketMessageRequest) {
+    const drawMessage: IDraw = DataDrawRequestSchema.parse(message.data);
+    const drawMessageEnhance: IDataDrawResponse = {...drawMessage, draftsman: player};
+
+    const responseDraw: ISocketMessageResponse = {
+        channel: GameSocketChannel.DRAW,
+        data: drawMessageEnhance
+    };
+
+    room.round.addDraw(drawMessage);
+    broadcastMessage(room, JSON.stringify(responseDraw), [socketUser.socketUUID]);
 }
 
 function safeSend(socket: WebSocket, message: string) {

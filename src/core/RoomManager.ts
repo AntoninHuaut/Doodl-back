@@ -33,6 +33,7 @@ export function addPlayerToRoom(player: IPlayer, room: Room) {
 
 export function removePlayerIdToRoom(playerId: string, room: Room) {
     loggerService.debug(`Removing player (${playerId}) to room (${room.roomId})`);
+
     room.removePlayerId(playerId);
 
     if (room.playerAdminId === playerId) {
@@ -44,7 +45,7 @@ export function removePlayerIdToRoom(playerId: string, room: Room) {
         }
     }
 
-    if (room.state === RoomState.INGAME && room.players.length < appRoomConfig.minPlayerPerRoom) {
+    if (room.players.length < appRoomConfig.minPlayerPerRoom) {
         room.endGame();
     }
 }
