@@ -107,6 +107,11 @@ export default class GameSocketResource extends WSResource {
                 deletePlayer(socketUser);
                 loggerService.debug(`Removing socket (${socketUser.socketUUID})`);
                 sockets.delete(socketUser.socketUUID);
+
+                const room = getRoomById(socketUser.roomId);
+                if (room) {
+                    broadcastMessage(room, JSON.stringify(getISocketMessageResponse(room)));
+                }
             };
 
             socket.onerror = (e: Event | ErrorEvent) => {
@@ -200,8 +205,9 @@ function onMessageInitChannel(socketUser: SocketUser, message: ISocketMessageReq
             draws: room.round.draws
         }
     };
+
     safeSend(socketUser, JSON.stringify(responseInitMessage));
-    onMessageInfoChannel(socketUser);
+    broadcastMessage(room, JSON.stringify(getISocketMessageResponse(room)));
 }
 
 function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
