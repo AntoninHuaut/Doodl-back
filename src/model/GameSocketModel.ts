@@ -45,6 +45,7 @@ export interface IDataDrawResponse extends IDraw {
 // IDataInfoRequest is empty
 export interface IDataInfoResponse {
     roomState: RoomState;
+    playerAdminId: string | undefined;
     playerList: IPlayer[];
     playerTurn: IPlayer[];
     roomConfig: IRoomConfig;

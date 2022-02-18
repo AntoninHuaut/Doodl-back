@@ -247,6 +247,7 @@ export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
         channel: GameSocketChannel.INFO,
         data: {
             roomState: room.state,
+            playerAdminId: room.playerAdminId,
             playerList: room.players,
             playerTurn: room.round.playerTurn,
             roomConfig: room.roomConfig
