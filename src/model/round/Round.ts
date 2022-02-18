@@ -1,5 +1,5 @@
 import {DrawTool, IDraw, IPlayer} from '../GameModel.ts';
-import {IDataChatRequest} from '../SocketModel.ts';
+import {IDataChatRequest} from '../GameSocketModel.ts';
 
 export default abstract class Round {
 
