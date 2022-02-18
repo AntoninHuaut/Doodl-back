@@ -121,7 +121,7 @@ function onDeletePlayerMessage(socket: WebSocket, message: IAdminSocketMessageRe
     const deletePlayerRequest: IAdminSocketDeletePlayerRequest = DataDeletePlayerSchema.parse(message.data);
     const playerId = deletePlayerRequest.playerId;
 
-    kickPlayer(playerId, "Admin kicked");
+    kickPlayer(playerId, "You have been excluded");
     const kickResponse: IAdminSocketMessage = {
         channel: AdminSocketChannel.KICK_PLAYER
     };
