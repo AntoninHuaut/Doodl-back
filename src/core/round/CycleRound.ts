@@ -1,5 +1,5 @@
 import {DrawTool, IDraw, IPlayer} from '../../model/GameModel.ts';
-import {IDataChatRequest, IDataGuestResponse} from '../../model/GameSocketModel.ts';
+import {IDataChatRequest, IDataGuessResponse} from '../../model/GameSocketModel.ts';
 import {Room} from "../Room.ts";
 import {getRandomWord} from "../WordManager.ts";
 import {loggerService} from "../../server.ts";
@@ -98,19 +98,19 @@ export default abstract class CycleRound {
         }
     }
 
-    handleChatMessage(author: IPlayer, message: IDataChatRequest, broadcastMessageFunc: (_guessData: IDataGuestResponse | undefined) => void) {
+    handleChatMessage(author: IPlayer, message: IDataChatRequest, broadcastMessageFunc: (_guessData: IDataGuessResponse | undefined) => void) {
         const hasGuess = this.isGameStarted() && message.message === this._word;
         if (hasGuess) {
             if (this._playersGuess.includes(author)) return;
 
-            const guestData: IDataGuestResponse = this.guessWord(author);
+            const guestData: IDataGuessResponse = this.guessWord(author);
             broadcastMessageFunc(guestData);
         } else {
             broadcastMessageFunc(undefined);
         }
     }
 
-    protected abstract guessWord(guessPlayer: IPlayer): IDataGuestResponse;
+    protected abstract guessWord(guessPlayer: IPlayer): IDataGuessResponse;
 
     private checkRoundOver() {
         const timeIsOver = this._dateStartedDrawing && new Date().getTime() > this._dateStartedDrawing.getTime() + this._room.roomConfig.timeByTurn * 1000

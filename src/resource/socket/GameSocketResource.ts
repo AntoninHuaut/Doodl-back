@@ -3,7 +3,7 @@ import {
     GameSocketChannel,
     IDataChatRequest,
     IDataDrawResponse,
-    IDataGuestResponse,
+    IDataGuessResponse,
     IDataInitRequest,
     ISocketMessageRequest,
     ISocketMessageResponse,
@@ -203,7 +203,7 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
     const [player, room] = checkInitAndGetRoom(socketUser);
     const chatMessage: IDataChatRequest = DataChatRequestSchema.parse(message.data);
 
-    room.round.handleChatMessage(player, chatMessage, (guessData: IDataGuestResponse | undefined) => {
+    room.round.handleChatMessage(player, chatMessage, (guessData: IDataGuessResponse | undefined) => {
         if (guessData) {
             broadcastMessage(room, JSON.stringify(guessData));
         } else {
