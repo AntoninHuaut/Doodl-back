@@ -44,7 +44,7 @@ export function removePlayerIdToRoom(playerId: string, room: Room) {
         }
     }
 
-    if (room.players.length < appRoomConfig.minPlayerPerRoom) {
+    if (room.state === RoomState.INGAME && room.players.length < appRoomConfig.minPlayerPerRoom) {
         room.endGame();
     }
 }
