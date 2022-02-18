@@ -76,10 +76,12 @@ export class Room {
     }
 
     endGame() {
+        if (this.#state !== RoomState.INGAME) return;
+
         loggerService.debug(`Room::endGame - Room (${this.#roomId})`);
 
-        this.round.endRound();
         this.state = RoomState.LOBBY;
+        this.round.endRound();
         broadcastMessage(this, JSON.stringify(getISocketMessageResponse(this)))
     }
 

@@ -2,6 +2,7 @@ import {IPlayer} from "./GameModel.ts";
 
 export interface IAdminSocketMessage {
     channel: AdminSocketChannel;
+    data?: DataDeletePlayerSchema;
 }
 
 export interface IAdminSocketConnectResponse extends IAdminSocketMessage {
@@ -19,6 +20,11 @@ export interface IAdminRoomInfo {
     drawCount: number;
 }
 
+export interface IAdminSocketDeletePlayerRequest extends IAdminSocketMessage {
+    playerId: string;
+}
+
 export enum AdminSocketChannel {
-    GLOBAL_DATA = "GLOBAL_DATA"
+    GLOBAL_DATA = "GLOBAL_DATA",
+    DELETE_PLAYER = "DELETE_PLAYER"
 }
