@@ -104,10 +104,8 @@ export default class GameSocketResource extends WSResource {
                 const socketUser: SocketUser | undefined = sockets.get(socketUUID);
                 if (socketUser == null) return;
 
-                loggerService.debug(`WebSocket ${socketUser.socketUUID} - Connection closed`);
-                deletePlayer(socketUser);
-                loggerService.debug(`Removing socket (${socketUser.socketUUID})`);
-                sockets.delete(socketUser.socketUUID);
+                deletePlayer(socketUser.socketUUID, socketUser.roomId);
+                kickPlayer(socketUser.socketUUID, "Connection closed");
 
                 const room = getRoomById(socketUser.roomId);
                 if (room) {
@@ -311,14 +309,16 @@ export function broadcastMessage(room: Room, message: string, ignorePlayersId: s
 function safeSend(socketUser: SocketUser, message: string) {
     try {
         socketUser.socket.send(message);
-    } catch (error) {
-        loggerService.error(`WebSocket ${socketUser.socketUUID ?? '??'} - ${error.stack} `);
+    } catch (_error) {
+        // Ignore
     }
 }
 
 export function kickPlayer(playerId: string, reason: string | undefined) {
     const socketUser: SocketUser | undefined = sockets.get(playerId);
     if (!socketUser) return;
+
+    loggerService.debug(`WebSocket ${socketUser.socketUUID} - KICK (reason: "${reason}")`);
 
     const socket = socketUser.socket;
     const kickResponse: IDataKickResponse = {
@@ -334,6 +334,8 @@ export function kickPlayer(playerId: string, reason: string | undefined) {
     } catch (_ex) {
         // Ignore
     }
+
+    loggerService.debug(`Removing socket (${socketUser.socketUUID})`);
     sockets.delete(playerId);
 }
 

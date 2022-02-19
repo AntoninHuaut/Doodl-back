@@ -11,9 +11,11 @@ import {getRoomList} from "../../core/RoomManager.ts";
 import {getSocketsCount, kickPlayer} from "./GameSocketResource.ts";
 import {z} from "https://deno.land/x/zod@v3.11.6/index.ts";
 import {IErrorSocketMessageResponse} from "../../model/GlobalSocketModel.ts";
+import {deletePlayer} from "../../core/PlayerManager.ts";
 
 const DataDeletePlayerSchema: z.ZodSchema<IAdminSocketDeletePlayerRequest> = z.object({
-    playerId: z.string()
+    playerId: z.string(),
+    roomId: z.string()
 });
 
 const AdminSocketMessageRequestSchema: z.ZodSchema<IAdminSocketMessageRequest> = z.object({
@@ -123,6 +125,7 @@ function onDeletePlayerMessage(socket: WebSocket, message: IAdminSocketMessageRe
     const deletePlayerRequest: IAdminSocketDeletePlayerRequest = DataDeletePlayerSchema.parse(message.data);
     const playerId = deletePlayerRequest.playerId;
 
+    deletePlayer(playerId, deletePlayerRequest.roomId);
     kickPlayer(playerId, "You have been excluded");
     const kickResponse: IAdminSocketMessage = {
         channel: AdminSocketChannel.KICK_PLAYER
