@@ -10,6 +10,7 @@ import {
 import {getRoomList} from "../../core/RoomManager.ts";
 import {getSocketsCount, kickPlayer} from "./GameSocketResource.ts";
 import {z} from "https://deno.land/x/zod@v3.11.6/index.ts";
+import {IErrorSocketMessageResponse} from "../../model/GlobalSocketModel.ts";
 
 const DataDeletePlayerSchema: z.ZodSchema<IAdminSocketDeletePlayerRequest> = z.object({
     playerId: z.string()
@@ -37,7 +38,7 @@ export default class AdminSocketResource extends WSResource {
             };
 
             socket.onmessage = (e: MessageEvent) => {
-                this.safeOnSocketMessage(socket, () => {
+                this.safeOnSocketMessage(socket, e.data, () => {
                     const jsonRequest = AdminSocketMessageRequestSchema.parse(JSON.parse(e.data));
                     handleAdminSocketMessage(socket, jsonRequest);
                 }, safeSend);
@@ -89,7 +90,8 @@ function handleAdminSocketMessage(socket: WebSocket, message: IAdminSocketMessag
             errorResponse = error.message;
         }
 
-        safeSend(socket, JSON.stringify({error: errorResponse}));
+        const errorObj: IErrorSocketMessageResponse = {channel: channel, error: errorResponse};
+        safeSend(socket, JSON.stringify(errorObj));
     }
 }
 

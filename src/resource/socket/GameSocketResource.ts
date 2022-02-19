@@ -32,6 +32,7 @@ import InvalidPermission from '../../model/exception/InvalidPermission.ts';
 import {appRoomConfig} from '../../config.ts';
 import InvalidState from "../../model/exception/InvalidState.ts";
 import WSResource from "./WSResource.ts";
+import {IErrorSocketMessageResponse} from "../../model/GlobalSocketModel.ts";
 
 const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
     roomId: z.string(),
@@ -93,7 +94,7 @@ export default class GameSocketResource extends WSResource {
                 const socketUser: SocketUser | undefined = sockets.get(socketUUID);
                 if (socketUser == null) return;
 
-                this.safeOnSocketMessage(socketUser, () => {
+                this.safeOnSocketMessage(socketUser, e.data, () => {
                     const jsonRequest = SocketMessageRequestSchema.parse(JSON.parse(e.data));
                     handleSocketMessage(socketUser, jsonRequest);
                 }, safeSend);
@@ -183,7 +184,8 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
             errorResponse = error.message;
         }
 
-        safeSend(socketUser, JSON.stringify({error: errorResponse}));
+        const errorObj: IErrorSocketMessageResponse = {channel: channel, error: errorResponse};
+        safeSend(socketUser, JSON.stringify(errorObj));
     }
 }
 
