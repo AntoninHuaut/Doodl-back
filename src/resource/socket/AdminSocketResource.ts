@@ -15,13 +15,14 @@ import {z} from "https://deno.land/x/zod@v3.11.6/index.ts";
 import {IErrorSocketMessageResponse} from "../../model/GlobalSocketModel.ts";
 import {deletePlayer} from "../../core/PlayerManager.ts";
 import {deleteRoom} from "../../core/RoomManager.ts";
+import {Room} from "../../core/Room.ts";
 
 const DataDeletePlayerSchema: z.ZodSchema<IAdminSocketDeletePlayerRequest> = z.object({
     playerId: z.string(),
     roomId: z.string()
 });
 
-const DataDeleteRoomShema: z.ZodSchema<IAdminSocketDeleteRoomRequest> = z/object({
+const DataDeleteRoomShema: z.ZodSchema<IAdminSocketDeleteRoomRequest> = z.object({
     roomId: z.string()
 })
 
@@ -148,7 +149,8 @@ function onDeletePlayerMessage(socket: WebSocket, message: IAdminSocketMessageRe
 function onDeleteRoomMessage(socket: WebSocket, message: IAdminSocketMessageRequest) {
     const deleteRoomRequest: IAdminSocketDeleteRoomRequest = DataDeleteRoomShema.parse(message.data);
     const roomId = deleteRoomRequest.roomId;
-    deleteRoom(getRoomById(roomId));
+    const room = getRoomById(roomId) as Room
+    deleteRoom(room);
     const deleteRoomResponse: IAdminSocketMessage = {
         channel: AdminSocketChannel.SUPPRESS_ROOM
     }
