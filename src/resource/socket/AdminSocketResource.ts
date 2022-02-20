@@ -148,7 +148,7 @@ function onDeletePlayerMessage(socket: WebSocket, message: IAdminSocketMessageRe
 function onDeleteRoomMessage(socket: WebSocket, message: IAdminSocketMessageRequest) {
     const deleteRoomRequest: IAdminSocketDeleteRoomRequest = DataDeleteRoomShema.parse(message.data);
     const roomId = deleteRoomRequest.roomId;
-    deleteRoom(getRoomById(roomId), "Room suppressed");
+    deleteRoom(getRoomById(roomId));
     const deleteRoomResponse: IAdminSocketMessage = {
         channel: AdminSocketChannel.SUPPRESS_ROOM
     }
