@@ -4,19 +4,26 @@ import {
     AdminSocketChannel,
     IAdminRoomInfo,
     IAdminSocketConnectResponse,
-    IAdminSocketDeletePlayerRequest, IAdminSocketMessage,
+    IAdminSocketDeletePlayerRequest,
+    IAdminSocketDeleteRoomRequest,
+    IAdminSocketMessage,
     IAdminSocketMessageRequest
 } from "../../model/AdminSocketModel.ts";
-import {getRoomList} from "../../core/RoomManager.ts";
+import {getRoomById, getRoomList} from "../../core/RoomManager.ts";
 import {getSocketsCount, kickPlayer} from "./GameSocketResource.ts";
 import {z} from "https://deno.land/x/zod@v3.11.6/index.ts";
 import {IErrorSocketMessageResponse} from "../../model/GlobalSocketModel.ts";
 import {deletePlayer} from "../../core/PlayerManager.ts";
+import {deleteRoom} from "../../core/RoomManager.ts";
 
 const DataDeletePlayerSchema: z.ZodSchema<IAdminSocketDeletePlayerRequest> = z.object({
     playerId: z.string(),
     roomId: z.string()
 });
+
+const DataDeleteRoomShema: z.ZodSchema<IAdminSocketDeleteRoomRequest> = z/object({
+    roomId: z.string()
+})
 
 const AdminSocketMessageRequestSchema: z.ZodSchema<IAdminSocketMessageRequest> = z.object({
     channel: z.nativeEnum(AdminSocketChannel),
@@ -71,6 +78,10 @@ function handleAdminSocketMessage(socket: WebSocket, message: IAdminSocketMessag
         switch (channel) {
             case AdminSocketChannel.GLOBAL_DATA: {
                 sendGlobalData(socket);
+                break;
+            }
+            case AdminSocketChannel.SUPPRESS_ROOM: {
+                onDeleteRoomMessage(socket, message);
                 break;
             }
             case AdminSocketChannel.KICK_PLAYER: {
@@ -132,6 +143,16 @@ function onDeletePlayerMessage(socket: WebSocket, message: IAdminSocketMessageRe
     };
 
     safeSend(socket, JSON.stringify(kickResponse));
+}
+
+function onDeleteRoomMessage(socket: WebSocket, message: IAdminSocketMessageRequest) {
+    const deleteRoomRequest: IAdminSocketDeleteRoomRequest = DataDeleteRoomShema.parse(message.data);
+    const roomId = deleteRoomRequest.roomId;
+    deleteRoom(getRoomById(roomId), "Room suppressed");
+    const deleteRoomResponse: IAdminSocketMessage = {
+        channel: AdminSocketChannel.SUPPRESS_ROOM
+    }
+    safeSend(socket, JSON.stringify(deleteRoomResponse));
 }
 
 function safeSend(socket: WebSocket, message: string) {
