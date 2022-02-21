@@ -4,23 +4,30 @@ import {
     AdminSocketChannel,
     IAdminRoomInfo,
     IAdminSocketConnectResponse,
-    IAdminSocketDeletePlayerRequest, IAdminSocketMessage,
+    IAdminSocketDeleteRoomRequest,
+    IAdminSocketKickPlayerRequest,
+    IAdminSocketMessage,
     IAdminSocketMessageRequest
 } from "../../model/AdminSocketModel.ts";
-import {getRoomList} from "../../core/RoomManager.ts";
+import {deleteRoom, getRoomById, getRoomList} from "../../core/RoomManager.ts";
 import {getSocketsCount, kickPlayer} from "./GameSocketResource.ts";
 import {z} from "https://deno.land/x/zod@v3.11.6/index.ts";
 import {IErrorSocketMessageResponse} from "../../model/GlobalSocketModel.ts";
 import {deletePlayer} from "../../core/PlayerManager.ts";
+import {Room} from "../../core/Room.ts";
 
-const DataDeletePlayerSchema: z.ZodSchema<IAdminSocketDeletePlayerRequest> = z.object({
+const DataDeletePlayerSchema: z.ZodSchema<IAdminSocketKickPlayerRequest> = z.object({
     playerId: z.string(),
     roomId: z.string()
 });
 
+const DataDeleteRoomSchema: z.ZodSchema<IAdminSocketDeleteRoomRequest> = z.object({
+    roomId: z.string()
+})
+
 const AdminSocketMessageRequestSchema: z.ZodSchema<IAdminSocketMessageRequest> = z.object({
     channel: z.nativeEnum(AdminSocketChannel),
-    data: DataDeletePlayerSchema.optional()
+    data: DataDeletePlayerSchema.or(DataDeleteRoomSchema).optional()
 });
 
 export default class AdminSocketResource extends WSResource {
@@ -73,6 +80,10 @@ function handleAdminSocketMessage(socket: WebSocket, message: IAdminSocketMessag
                 sendGlobalData(socket);
                 break;
             }
+            case AdminSocketChannel.DELETE_ROOM: {
+                onDeleteRoomMessage(socket, message);
+                break;
+            }
             case AdminSocketChannel.KICK_PLAYER: {
                 onDeletePlayerMessage(socket, message);
                 break;
@@ -122,7 +133,7 @@ function sendGlobalData(socket: WebSocket) {
 }
 
 function onDeletePlayerMessage(socket: WebSocket, message: IAdminSocketMessageRequest) {
-    const deletePlayerRequest: IAdminSocketDeletePlayerRequest = DataDeletePlayerSchema.parse(message.data);
+    const deletePlayerRequest: IAdminSocketKickPlayerRequest = DataDeletePlayerSchema.parse(message.data);
     const playerId = deletePlayerRequest.playerId;
 
     deletePlayer(playerId, deletePlayerRequest.roomId);
@@ -132,6 +143,20 @@ function onDeletePlayerMessage(socket: WebSocket, message: IAdminSocketMessageRe
     };
 
     safeSend(socket, JSON.stringify(kickResponse));
+}
+
+function onDeleteRoomMessage(socket: WebSocket, message: IAdminSocketMessageRequest) {
+    const deleteRoomRequest: IAdminSocketDeleteRoomRequest = DataDeleteRoomSchema.parse(message.data);
+    const roomId = deleteRoomRequest.roomId;
+    const room: Room | undefined = getRoomById(roomId);
+    if (!room) return;
+
+    deleteRoom(room);
+    const deleteRoomResponse: IAdminSocketMessage = {
+        channel: AdminSocketChannel.DELETE_ROOM
+    }
+
+    safeSend(socket, JSON.stringify(deleteRoomResponse));
 }
 
 function safeSend(socket: WebSocket, message: string) {
