@@ -3,7 +3,7 @@ import {
     GameSocketChannel,
     IDataChatRequest,
     IDataDrawResponse,
-    IDataGuessResponse,
+    IDataGuessResponse, IDataInfoResponse,
     IDataInitRequest,
     IDataKickResponse,
     ISocketMessageRequest,
@@ -340,14 +340,17 @@ export function kickPlayer(playerId: string, reason: string | undefined) {
 }
 
 export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
+    const infoResponse: IDataInfoResponse = {
+        roomState: room.state,
+        roundCurrentCycle: room.round.roundCurrentCycle,
+        playerAdminId: room.playerAdminId,
+        playerList: room.players,
+        playerTurn: room.round.playerTurn,
+        roomConfig: room.roomConfig
+    };
+
     return {
         channel: GameSocketChannel.INFO,
-        data: {
-            roomState: room.state,
-            playerAdminId: room.playerAdminId,
-            playerList: room.players,
-            playerTurn: room.round.playerTurn,
-            roomConfig: room.roomConfig
-        }
+        data: infoResponse
     };
 }

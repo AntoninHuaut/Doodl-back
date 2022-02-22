@@ -166,6 +166,10 @@ export default abstract class CycleRound {
         return this._dateStartedDrawing;
     }
 
+    get roundCurrentCycle() {
+        return this._currentCycleRoundNumber;
+    }
+
     get playerTurn() {
         return this._playerTurn;
     }
