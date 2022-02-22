@@ -14,7 +14,8 @@ export function createPlayer(socketUser: SocketUser, dataInit: IDataInitRequest)
         playerId: socketUser.socketUUID,
         name: dataInit.name,
         imgUrl: dataInit.imgUrl,
-        totalPoint: 0
+        totalPoint: 0,
+        roundPoint: 0
     };
 
     addPlayerToRoom(player, room);

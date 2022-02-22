@@ -56,6 +56,7 @@ export default abstract class CycleRound {
 
         this.#setNextPlayerTurn();
 
+        this._room.state = RoomState.CHOOSE_WORD;
         sendAskChooseWordMessage(this);
 
         this._timeoutUserChooseWord = setInterval(() => {
