@@ -21,8 +21,8 @@ export default class ClassicCycleRound extends CycleRound {
         const guessGainPoint = getGuessPoint(startDate, endDate, new Date());
         const drawGainPoint = Math.round(guessGainPoint / 2);
 
-        guessPlayer.point += guessGainPoint;
-        this._playerTurn.forEach(drawer => drawer.point += drawGainPoint);
+        guessPlayer.roundPoint += guessGainPoint;
+        this._playerTurn.forEach(drawer => drawer.roundPoint += drawGainPoint);
 
         return {
             guessGainPoint: guessGainPoint,

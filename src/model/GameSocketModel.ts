@@ -12,11 +12,11 @@ export interface ISocketMessage {
 }
 
 export interface ISocketMessageRequest extends ISocketMessage {
-    data?: IDataInitRequest | IDataChatRequest | IDraw | IRoomConfig;
+    data?: IDataInitRequest | IDataChatRequest | IDraw | IRoomConfig | IDataChooseWordRequest;
 }
 
 export interface ISocketMessageResponse extends ISocketMessage {
-    data: IDataInitResponse | IMessage | IDataDrawResponse | IDataInfoResponse | IRoomConfig | IDataKickResponse;
+    data: IDataInitResponse | IMessage | IDataDrawResponse | IDataInfoResponse | IRoomConfig | IDataKickResponse | IDataChooseWordAsk;
 }
 
 export interface IDataInitRequest {
@@ -55,12 +55,21 @@ export interface IDataInfoResponse {
 // IDataStartRequest = IRoomConfig
 // IDataStartResponse = IRoomConfig on success
 
+export interface IDataChooseWordRequest {
+    word: string;
+}
+
+export interface IDataChooseWordAsk {
+    words: string[];
+}
+
 // IDataGuessRequest doesn't exist
 export interface IDataGuessResponse {
     guessGainPoint: number;
     drawGainPoint: number;
     guesser: IPlayer;
 }
+
 // TODO rework guess, => INFO ?
 
 // IDataKickRequest doesn't exist
@@ -76,6 +85,7 @@ export enum GameSocketChannel {
     DRAW = "DRAW",
     INFO = "INFO",
     CONFIG = "CONFIG",
+    CHOOSE_WORD = "CHOOSE_WORD",
     START = "START",
     GUESS = "GUESS",
     KICK = "KICK"

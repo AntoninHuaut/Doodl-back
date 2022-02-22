@@ -1,9 +1,10 @@
 import {DrawTool, IDraw, IPlayer, RoomState} from '../../model/GameModel.ts';
 import {IDataChatRequest, IDataGuessResponse} from '../../model/GameSocketModel.ts';
 import {Room} from "../Room.ts";
-import {getRandomWord} from "../WordManager.ts";
+import {getNbRandomWord, getRandomWordFromArray} from "../WordManager.ts";
 import {loggerService} from "../../server.ts";
 import {appRoomConfig} from "../../config.ts";
+import {sendAskChooseWordMessage} from "../../resource/socket/GameSocketResource.ts";
 
 export default abstract class CycleRound {
 
@@ -15,9 +16,12 @@ export default abstract class CycleRound {
     protected _playersGuess: IPlayer[];
 
     private _word: string | null;
+    private _possibleWords: string[];
+
     private readonly _draws: IDraw[];
     private _intervalId: number | null;
     private _timeoutNextRoundId: number | null;
+    private _timeoutUserChooseWord: number | null;
 
     private _currentCycleRoundNumber = 0;
 
@@ -30,12 +34,14 @@ export default abstract class CycleRound {
         this._playerNoYetPlayedCurrentCycle = [];
         this._intervalId = null;
         this._timeoutNextRoundId = null;
+        this._timeoutUserChooseWord = null;
         this._word = null;
+        this._possibleWords = [];
     }
 
     startRound() {
-        this._word = getRandomWord();
-        loggerService.debug(`Round::startRound - Room (${this._room.roomId}) with word ${this._word}`);
+        this._possibleWords = getNbRandomWord(3);
+        loggerService.debug(`Round::startRound - Room (${this._room.roomId}) with possible words ${this._possibleWords}`);
 
         if (this._playerNoYetPlayedCurrentCycle.length === 0) {
             if (this._room.players.length < appRoomConfig.minPlayerPerRoom) {
@@ -49,9 +55,12 @@ export default abstract class CycleRound {
         }
 
         this.#setNextPlayerTurn();
-        this._dateStartedDrawing = new Date();
 
-        this._intervalId = setInterval(() => this.checkRoundOver(), 1000);
+        sendAskChooseWordMessage(this);
+
+        this._timeoutUserChooseWord = setInterval(() => {
+            this.setUserChooseWord(getRandomWordFromArray(this._possibleWords))
+        }, 10000);
     }
 
     endRound() {
@@ -62,8 +71,24 @@ export default abstract class CycleRound {
         this._playerTurn.length = 0;
         this._playersGuess.length = 0;
         this._word = null;
+        this._room.players.forEach(p => {
+            p.totalPoint += p.roundPoint;
+            p.roundPoint = 0;
+        });
 
         this.#clearRunnable();
+    }
+
+    setUserChooseWord(word: string) {
+        if (this._room.state !== RoomState.CHOOSE_WORD) return;
+        if (!this._possibleWords.includes(word)) return;
+
+        this._room.state = RoomState.DRAWING;
+        this._word = word;
+        this.#clearUserChooseWordTimeout();
+
+        this._dateStartedDrawing = new Date();
+        this._intervalId = setInterval(() => this.checkRoundOver(), 1000);
     }
 
     #clearRunnable() {
@@ -75,10 +100,18 @@ export default abstract class CycleRound {
             clearTimeout(this._timeoutNextRoundId);
             this._timeoutNextRoundId = null;
         }
+        this.#clearUserChooseWordTimeout();
+    }
+
+    #clearUserChooseWordTimeout() {
+        if (this._timeoutUserChooseWord) {
+            clearTimeout(this._timeoutUserChooseWord);
+            this._timeoutUserChooseWord = null;
+        }
     }
 
     nextRound() {
-        if (this._room.state !== RoomState.INGAME) return;
+        if (!this._room.isInGame()) return;
 
         loggerService.debug(`Round::nextRound - Room (${this._room.roomId})`);
 
@@ -121,7 +154,7 @@ export default abstract class CycleRound {
     protected abstract guessWord(guessPlayer: IPlayer): IDataGuessResponse;
 
     private checkRoundOver() {
-        if (this._room.state !== RoomState.INGAME) return;
+        if (!this._room.isInGame()) return;
 
         const timeIsOver = this._dateStartedDrawing && new Date().getTime() > this._dateStartedDrawing.getTime() + this._room.roomConfig.timeByTurn * 1000
         const allPlayerGuessed = this._room.players.filter(p => !this._playersGuess.includes(p)).length === 0;
@@ -172,6 +205,10 @@ export default abstract class CycleRound {
 
     get playerTurn() {
         return this._playerTurn;
+    }
+
+    get possibleWords() {
+        return this._possibleWords;
     }
 
     get draws() {
