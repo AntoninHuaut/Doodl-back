@@ -2,8 +2,12 @@ import {z} from "../../deps.ts";
 import {
     GameSocketChannel,
     IDataChatRequest,
+    IDataChooseWordAsk,
+    IDataChooseWordRequest,
+    IDataChooseWordResponse,
     IDataDrawResponse,
-    IDataGuessResponse, IDataInfoResponse,
+    IDataGuessResponse,
+    IDataInfoResponse,
     IDataInitRequest,
     IDataKickResponse,
     ISocketMessageRequest,
@@ -33,6 +37,7 @@ import {appRoomConfig} from '../../config.ts';
 import InvalidState from "../../model/exception/InvalidState.ts";
 import WSResource from "./WSResource.ts";
 import {IErrorSocketMessageResponse} from "../../model/GlobalSocketModel.ts";
+import CycleRound from "../../core/round/CycleRound.ts";
 
 const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
     roomId: z.string(),
@@ -58,10 +63,14 @@ const DataConfigRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
     timeByTurn: z.number().min(appRoomConfig.minTimeByTurn).max(appRoomConfig.maxTimeByTurn),
     cycleRoundByGame: z.number().min(appRoomConfig.minCycleRoundByGame).max(appRoomConfig.maxCycleRoundByGame)
 });
+const DataChooseWordRequestSchema: z.ZodSchema<IDataChooseWordRequest> = z.object({
+    word: z.string()
+});
 
 const SocketMessageRequestSchema: z.ZodSchema<ISocketMessageRequest> = z.object({
     channel: z.nativeEnum(GameSocketChannel),
-    data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawRequestSchema).or(DataConfigRequestSchema).optional()
+    data: DataInitRequestSchema.or(DataChatRequestSchema).or(DataDrawRequestSchema)
+        .or(DataConfigRequestSchema).or(DataChooseWordRequestSchema).optional()
 });
 
 const sockets = new Map<string, SocketUser>();
@@ -157,6 +166,10 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
             }
             case GameSocketChannel.CONFIG: {
                 onMessageConfigChannel(socketUser, message);
+                break;
+            }
+            case GameSocketChannel.CHOOSE_WORD: {
+                onMessageChooseWordChannel(socketUser, message);
                 break;
             }
             case GameSocketChannel.START: {
@@ -284,6 +297,14 @@ function onMessageStartChannel(socketUser: SocketUser) {
     broadcastMessage(room, JSON.stringify(getISocketMessageResponse(room)));
 }
 
+function onMessageChooseWordChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
+    const [, room] = checkInitAndGetRoom(socketUser);
+    if (room.state !== RoomState.CHOOSE_WORD) throw new InvalidState("The room must be in the CHOOSE_WORD state");
+
+    const word: string = DataChooseWordRequestSchema.parse(message.data).word;
+    room.round.setUserChooseWord(word);
+}
+
 function checkInitAndGetRoom(socketUser: SocketUser): [IPlayer, Room] {
     const roomId = socketUser.roomId;
     const player = socketUser.player;
@@ -303,6 +324,38 @@ export function broadcastMessage(room: Room, message: string, ignorePlayersId: s
         if (otherSocketUser != null) {
             safeSend(otherSocketUser, message);
         }
+    });
+}
+
+export function sendAskChooseWordMessage(round: CycleRound) {
+    const askChooseWord: IDataChooseWordAsk = {
+        words: round.possibleWords
+    };
+
+    round.playerTurn.forEach(player => {
+        const socketUser: SocketUser | undefined = sockets.get(player.playerId);
+        if (!socketUser) return;
+
+        safeSend(socketUser, JSON.stringify({
+            channel: GameSocketChannel.CHOOSE_WORD,
+            data: askChooseWord
+        }));
+    });
+}
+
+export function sendChooseWordMessageResponse(round: CycleRound, word: string) {
+    const responseChooseWord: IDataChooseWordResponse = {
+        word: word
+    };
+
+    round.playerTurn.forEach(player => {
+        const socketUser: SocketUser | undefined = sockets.get(player.playerId);
+        if (!socketUser) return;
+
+        safeSend(socketUser, JSON.stringify({
+            channel: GameSocketChannel.CHOOSE_WORD,
+            data: responseChooseWord
+        }));
     });
 }
 
@@ -342,12 +395,18 @@ export function kickPlayer(playerId: string, reason: string | undefined) {
 export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
     const infoResponse: IDataInfoResponse = {
         roomState: room.state,
-        roundCurrentCycle: room.round.roundCurrentCycle,
         playerAdminId: room.playerAdminId,
         playerList: room.players,
-        playerTurn: room.round.playerTurn,
         roomConfig: room.roomConfig
     };
+
+    if (room.state !== RoomState.LOBBY) {
+        infoResponse.roundData = {
+            anonymeWord: room.round.anonymeWord ?? "",
+            roundCurrentCycle: room.round.roundCurrentCycle,
+            playerTurn: room.round.playerTurn,
+        };
+    }
 
     return {
         channel: GameSocketChannel.INFO,

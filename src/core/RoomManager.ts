@@ -63,8 +63,6 @@ export function removePlayerIdToRoom(playerId: string, room: Room) {
     }
 }
 
-// TODO auto delete x times after x time when player leave, reset if player join again
-
 export function startGame(room: Room) {
     if (room.players.length < appRoomConfig.minPlayerPerRoom) throw new InvalidState("Invalid minimum number of players");
     if (room.state !== RoomState.LOBBY) throw new InvalidState("Game can only be started from lobby");

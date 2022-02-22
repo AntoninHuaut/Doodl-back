@@ -69,18 +69,20 @@ export class Room {
         loggerService.debug(`Room::startGame - Room (${this.#roomId})`);
 
         this.#createRound();
-        this.players.forEach(player => player.point = 0);
-        this.state = RoomState.INGAME;
+        this.players.forEach(player => {
+            player.totalPoint = 0;
+            player.roundPoint = 0
+        });
         this.round.startRound();
     }
 
     endGame() {
-        if (this.#state !== RoomState.INGAME) return;
+        if (!this.isInGame()) return;
 
         loggerService.debug(`Room::endGame - Room (${this.#roomId})`);
 
-        this.state = RoomState.LOBBY;
         this.round.endRound();
+        this.state = RoomState.LOBBY;
         broadcastMessage(this, JSON.stringify(getISocketMessageResponse(this)))
     }
 
@@ -109,6 +111,10 @@ export class Room {
 
     isPlayerAdmin(player: IPlayer) {
         return player.playerId === this.#playerAdminId;
+    }
+
+    isInGame(): boolean {
+        return this.#state !== RoomState.LOBBY;
     }
 
     get roomConfig(): IRoomConfig {
