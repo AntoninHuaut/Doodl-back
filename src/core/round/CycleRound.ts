@@ -71,6 +71,7 @@ export default abstract class CycleRound {
         this._draws.length = 0;
         this._playerTurn.length = 0;
         this._playersGuess.length = 0;
+        this._possibleWords.length = 0;
         this._word = null;
         this._room.players.forEach(p => {
             p.totalPoint += p.roundPoint;
