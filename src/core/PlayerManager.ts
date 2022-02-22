@@ -21,9 +21,9 @@ export function createPlayer(socketUser: SocketUser, dataInit: IDataInitRequest)
     return player;
 }
 
-export function deletePlayer(socketUser: SocketUser) {
-    const room: Room | undefined = getRoomById(socketUser.roomId);
+export function deletePlayer(playerId: string, roomId: string | undefined) {
+    const room: Room | undefined = getRoomById(roomId);
     if (room != null) {
-        removePlayerIdToRoom(socketUser.socketUUID, room);
+        removePlayerIdToRoom(playerId, room);
     }
 }

@@ -5,6 +5,7 @@ import {
     IDataDrawResponse,
     IDataGuessResponse,
     IDataInitRequest,
+    IDataKickResponse,
     ISocketMessageRequest,
     ISocketMessageResponse,
     SocketUser
@@ -31,6 +32,7 @@ import InvalidPermission from '../../model/exception/InvalidPermission.ts';
 import {appRoomConfig} from '../../config.ts';
 import InvalidState from "../../model/exception/InvalidState.ts";
 import WSResource from "./WSResource.ts";
+import {IErrorSocketMessageResponse} from "../../model/GlobalSocketModel.ts";
 
 const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
     roomId: z.string(),
@@ -92,7 +94,7 @@ export default class GameSocketResource extends WSResource {
                 const socketUser: SocketUser | undefined = sockets.get(socketUUID);
                 if (socketUser == null) return;
 
-                this.safeOnSocketMessage(socketUser, () => {
+                this.safeOnSocketMessage(socketUser, e.data, () => {
                     const jsonRequest = SocketMessageRequestSchema.parse(JSON.parse(e.data));
                     handleSocketMessage(socketUser, jsonRequest);
                 }, safeSend);
@@ -102,10 +104,13 @@ export default class GameSocketResource extends WSResource {
                 const socketUser: SocketUser | undefined = sockets.get(socketUUID);
                 if (socketUser == null) return;
 
-                loggerService.debug(`WebSocket ${socketUser.socketUUID} - Connection closed`);
-                deletePlayer(socketUser);
-                loggerService.debug(`Removing socket (${socketUser.socketUUID})`);
-                sockets.delete(socketUser.socketUUID);
+                deletePlayer(socketUser.socketUUID, socketUser.roomId);
+                kickPlayer(socketUser.socketUUID, "Connection closed");
+
+                const room = getRoomById(socketUser.roomId);
+                if (room) {
+                    broadcastMessage(room, JSON.stringify(getISocketMessageResponse(room)));
+                }
             };
 
             socket.onerror = (e: Event | ErrorEvent) => {
@@ -177,7 +182,8 @@ function handleSocketMessage(socketUser: SocketUser, message: ISocketMessageRequ
             errorResponse = error.message;
         }
 
-        safeSend(socketUser, JSON.stringify({error: errorResponse}));
+        const errorObj: IErrorSocketMessageResponse = {channel: channel, error: errorResponse};
+        safeSend(socketUser, JSON.stringify(errorObj));
     }
 }
 
@@ -199,8 +205,9 @@ function onMessageInitChannel(socketUser: SocketUser, message: ISocketMessageReq
             draws: room.round.draws
         }
     };
+
     safeSend(socketUser, JSON.stringify(responseInitMessage));
-    onMessageInfoChannel(socketUser);
+    broadcastMessage(room, JSON.stringify(getISocketMessageResponse(room)));
 }
 
 function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
@@ -244,19 +251,6 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
 function onMessageInfoChannel(socketUser: SocketUser) {
     const [, room] = checkInitAndGetRoom(socketUser);
     safeSend(socketUser, JSON.stringify(getISocketMessageResponse(room)));
-}
-
-export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
-    return {
-        channel: GameSocketChannel.INFO,
-        data: {
-            roomState: room.state,
-            playerAdminId: room.playerAdminId,
-            playerList: room.players,
-            playerTurn: room.round.playerTurn,
-            roomConfig: room.roomConfig
-        }
-    };
 }
 
 function onMessageConfigChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
@@ -315,7 +309,45 @@ export function broadcastMessage(room: Room, message: string, ignorePlayersId: s
 function safeSend(socketUser: SocketUser, message: string) {
     try {
         socketUser.socket.send(message);
-    } catch (error) {
-        loggerService.error(`WebSocket ${socketUser.socketUUID ?? '??'} - ${error.stack} `);
+    } catch (_error) {
+        // Ignore
     }
+}
+
+export function kickPlayer(playerId: string, reason: string | undefined) {
+    const socketUser: SocketUser | undefined = sockets.get(playerId);
+    if (!socketUser) return;
+
+    loggerService.debug(`WebSocket ${socketUser.socketUUID} - KICK (reason: "${reason}")`);
+
+    const socket = socketUser.socket;
+    const kickResponse: IDataKickResponse = {
+        reason: reason
+    };
+
+    try {
+        safeSend(socketUser, JSON.stringify({
+            channel: GameSocketChannel.KICK,
+            data: kickResponse
+        }));
+        socket.close(1000);
+    } catch (_ex) {
+        // Ignore
+    }
+
+    loggerService.debug(`Removing socket (${socketUser.socketUUID})`);
+    sockets.delete(playerId);
+}
+
+export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
+    return {
+        channel: GameSocketChannel.INFO,
+        data: {
+            roomState: room.state,
+            playerAdminId: room.playerAdminId,
+            playerList: room.players,
+            playerTurn: room.round.playerTurn,
+            roomConfig: room.roomConfig
+        }
+    };
 }

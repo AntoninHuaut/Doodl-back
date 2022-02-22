@@ -3,6 +3,7 @@ import {Room} from './Room.ts';
 import {loggerService} from '../server.ts';
 import InvalidState from "../model/exception/InvalidState.ts";
 import {appRoomConfig} from "../config.ts";
+import {kickPlayer} from "../resource/socket/GameSocketResource.ts";
 
 const ROOM_CODE_LENGTH = 8;
 const roomMap = new Map<string, Room>();
@@ -12,6 +13,14 @@ export function createRoom(): Room {
     loggerService.debug(`Creating room with id: ${room.roomId}`);
     roomMap.set(room.roomId, room);
     return room;
+}
+
+export function deleteRoom(room: Room) {
+    loggerService.debug(`Room (${room.roomId}) deleted`);
+
+    room.endGame();
+    room.players.forEach(p => kickPlayer(p.playerId, "Room deleted"));
+    roomMap.delete(room.roomId);
 }
 
 export function getRoomById(roomId: string | undefined): Room | undefined {
@@ -47,6 +56,10 @@ export function removePlayerIdToRoom(playerId: string, room: Room) {
 
     if (room.players.length < appRoomConfig.minPlayerPerRoom) {
         room.endGame();
+    }
+
+    if (room.players.length === 0) {
+        deleteRoom(room);
     }
 }
 

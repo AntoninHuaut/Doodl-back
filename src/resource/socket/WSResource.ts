@@ -1,4 +1,5 @@
 import {Drash, z} from "../../deps.ts";
+import {IErrorSocketMessageResponse} from "../../model/GlobalSocketModel.ts";
 
 export default abstract class WSResource extends Drash.Resource {
 
@@ -36,9 +37,12 @@ export default abstract class WSResource extends Drash.Resource {
     }
 
     safeOnSocketMessage<T>(genSocket: T,
+                           rawData: string,
                            parseSocketMessage: () => void,
                            sendMessage: (socket: T, msg: string) => void) {
+        let jsonRawData;
         try {
+            jsonRawData = JSON.parse(rawData);
             parseSocketMessage();
         } catch (error) {
             let errorResponse: z.ZodIssue[] | string;
@@ -49,7 +53,11 @@ export default abstract class WSResource extends Drash.Resource {
                 errorResponse = error.name;
             }
 
-            sendMessage(genSocket, JSON.stringify({error: errorResponse}));
+            const objRes: IErrorSocketMessageResponse = {channel: "UNKNOWN", error: errorResponse};
+            if (jsonRawData?.channel) {
+                objRes.channel = jsonRawData.channel;
+            }
+            sendMessage(genSocket, JSON.stringify(objRes));
         }
     }
 
