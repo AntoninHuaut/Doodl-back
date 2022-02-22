@@ -1,7 +1,7 @@
 import {DrawTool, IDraw, IPlayer, RoomState} from '../../model/GameModel.ts';
 import {IDataChatRequest, IDataGuessResponse} from '../../model/GameSocketModel.ts';
 import {Room} from "../Room.ts";
-import {getNbRandomWord, getRandomWordFromArray} from "../WordManager.ts";
+import {getNbRandomWord, getRandomWordFromArray, revealOneLetter} from "../WordManager.ts";
 import {loggerService} from "../../server.ts";
 import {appRoomConfig} from "../../config.ts";
 import {
@@ -20,6 +20,7 @@ export default abstract class CycleRound {
     protected _playersGuess: IPlayer[];
 
     private _word: string | null;
+    private _anonymeWord: string | null;
     private _possibleWords: string[];
 
     private readonly _draws: IDraw[];
@@ -40,6 +41,7 @@ export default abstract class CycleRound {
         this._timeoutNextRoundId = null;
         this._timeoutUserChooseWord = null;
         this._word = null;
+        this._anonymeWord = null;
         this._possibleWords = [];
     }
 
@@ -77,6 +79,7 @@ export default abstract class CycleRound {
         this._playersGuess.length = 0;
         this._possibleWords.length = 0;
         this._word = null;
+        this._anonymeWord = null;
         this._room.players.forEach(p => {
             p.totalPoint += p.roundPoint;
             p.roundPoint = 0;
@@ -93,6 +96,8 @@ export default abstract class CycleRound {
 
         this._room.state = RoomState.DRAWING;
         this._word = word;
+        this._anonymeWord = revealOneLetter(this._word);
+
         this.#clearUserChooseWordTimeout();
 
         sendChooseWordMessageResponse(this, word);
@@ -204,9 +209,8 @@ export default abstract class CycleRound {
         return this._playerTurn.includes(player);
     }
 
-    get anonymeWord(): string {
-        // TODO reveal one letter
-        return this._word?.replace(/./g, "_") ?? "";
+    get anonymeWord() {
+        return this._anonymeWord;
     }
 
     get playersGuess() {

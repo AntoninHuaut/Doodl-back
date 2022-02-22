@@ -3,9 +3,11 @@ import {
     GameSocketChannel,
     IDataChatRequest,
     IDataChooseWordAsk,
-    IDataChooseWordRequest, IDataChooseWordResponse,
+    IDataChooseWordRequest,
+    IDataChooseWordResponse,
     IDataDrawResponse,
-    IDataGuessResponse, IDataInfoResponse,
+    IDataGuessResponse,
+    IDataInfoResponse,
     IDataInitRequest,
     IDataKickResponse,
     ISocketMessageRequest,
@@ -35,7 +37,6 @@ import {appRoomConfig} from '../../config.ts';
 import InvalidState from "../../model/exception/InvalidState.ts";
 import WSResource from "./WSResource.ts";
 import {IErrorSocketMessageResponse} from "../../model/GlobalSocketModel.ts";
-import ClassicCycleRound from "../../core/round/ClassicCycleRound.ts";
 import CycleRound from "../../core/round/CycleRound.ts";
 
 const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
@@ -394,12 +395,18 @@ export function kickPlayer(playerId: string, reason: string | undefined) {
 export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
     const infoResponse: IDataInfoResponse = {
         roomState: room.state,
-        roundCurrentCycle: room.round.roundCurrentCycle,
         playerAdminId: room.playerAdminId,
         playerList: room.players,
-        playerTurn: room.round.playerTurn,
         roomConfig: room.roomConfig
     };
+
+    if (room.state !== RoomState.LOBBY) {
+        infoResponse.roundData = {
+            anonymeWord: room.round.anonymeWord ?? "",
+            roundCurrentCycle: room.round.roundCurrentCycle,
+            playerTurn: room.round.playerTurn,
+        };
+    }
 
     return {
         channel: GameSocketChannel.INFO,

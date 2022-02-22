@@ -1,4 +1,4 @@
-import {IDraw, IMessage, IPlayer, IRoomConfig, RoomState} from './GameModel.ts';
+import {IDraw, IMessage, IPlayer, IRoomConfig, RoomState, RoundData} from './GameModel.ts';
 
 export interface SocketUser {
     socket: WebSocket;
@@ -45,10 +45,9 @@ export interface IDataDrawResponse extends IDraw {
 // IDataInfoRequest is empty
 export interface IDataInfoResponse {
     roomState: RoomState;
-    roundCurrentCycle: number;
+    roundData?: RoundData;
     playerAdminId: string | undefined;
     playerList: IPlayer[];
-    playerTurn: IPlayer[];
     roomConfig: IRoomConfig;
 }
 

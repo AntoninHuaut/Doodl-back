@@ -12,6 +12,12 @@ export interface IPlayer {
     roundPoint: number;
 }
 
+export interface RoundData {
+    roundCurrentCycle: number;
+    anonymeWord: string;
+    playerTurn: IPlayer[];
+}
+
 export interface IRoomStatus {
     isPlaying: boolean;
     playerList: IPlayer[];
