@@ -4,7 +4,11 @@ import {Room} from "../Room.ts";
 import {getNbRandomWord, getRandomWordFromArray} from "../WordManager.ts";
 import {loggerService} from "../../server.ts";
 import {appRoomConfig} from "../../config.ts";
-import {sendAskChooseWordMessage} from "../../resource/socket/GameSocketResource.ts";
+import {
+    broadcastMessage, getISocketMessageResponse,
+    sendAskChooseWordMessage,
+    sendChooseWordMessageResponse
+} from "../../resource/socket/GameSocketResource.ts";
 
 export default abstract class CycleRound {
 
@@ -85,9 +89,14 @@ export default abstract class CycleRound {
         if (this._room.state !== RoomState.CHOOSE_WORD) return;
         if (!this._possibleWords.includes(word)) return;
 
+        loggerService.debug(`Round::setUserChooseWord - Room ${this._room.roomId} with word ${word}`);
+
         this._room.state = RoomState.DRAWING;
         this._word = word;
         this.#clearUserChooseWordTimeout();
+
+        sendChooseWordMessageResponse(this, word);
+        broadcastMessage(this._room, JSON.stringify(getISocketMessageResponse(this._room)));
 
         this._dateStartedDrawing = new Date();
         this._intervalId = setInterval(() => this.checkRoundOver(), 1000);
@@ -141,19 +150,22 @@ export default abstract class CycleRound {
         }
     }
 
-    handleChatMessage(author: IPlayer, message: IDataChatRequest, broadcastMessageFunc: (_guessData: IDataGuessResponse | undefined) => void) {
+    handleChatMessage(author: IPlayer, message: IDataChatRequest,
+                      broadcastMessageFunc: (_guessData: IDataGuessResponse | undefined) => void) {
         const hasGuess = this.isGameStarted() && message.message === this._word;
         if (hasGuess) {
             if (this._playersGuess.includes(author)) return;
 
-            const guestData: IDataGuessResponse = this.guessWord(author);
-            broadcastMessageFunc(guestData);
+            this.guessWord(author);
+            broadcastMessageFunc({
+                playersGuess: this._playersGuess
+            });
         } else {
             broadcastMessageFunc(undefined);
         }
     }
 
-    protected abstract guessWord(guessPlayer: IPlayer): IDataGuessResponse;
+    protected abstract guessWord(guessPlayer: IPlayer): void;
 
     private checkRoundOver() {
         if (!this._room.isInGame()) return;
@@ -195,6 +207,10 @@ export default abstract class CycleRound {
     get anonymeWord(): string {
         // TODO reveal one letter
         return this._word?.replace(/./g, "_") ?? "";
+    }
+
+    get playersGuess() {
+        return this._playersGuess;
     }
 
     get dateStartedDrawing() {

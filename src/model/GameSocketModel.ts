@@ -59,18 +59,18 @@ export interface IDataChooseWordRequest {
     word: string;
 }
 
+export interface IDataChooseWordResponse {
+    word: string;
+}
+
 export interface IDataChooseWordAsk {
     words: string[];
 }
 
 // IDataGuessRequest doesn't exist
 export interface IDataGuessResponse {
-    guessGainPoint: number;
-    drawGainPoint: number;
-    guesser: IPlayer;
+    playersGuess: IPlayer[];
 }
-
-// TODO rework guess, => INFO ?
 
 // IDataKickRequest doesn't exist
 export interface IDataKickResponse {

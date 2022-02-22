@@ -3,7 +3,7 @@ import {
     GameSocketChannel,
     IDataChatRequest,
     IDataChooseWordAsk,
-    IDataChooseWordRequest,
+    IDataChooseWordRequest, IDataChooseWordResponse,
     IDataDrawResponse,
     IDataGuessResponse, IDataInfoResponse,
     IDataInitRequest,
@@ -338,6 +338,22 @@ export function sendAskChooseWordMessage(round: CycleRound) {
         safeSend(socketUser, JSON.stringify({
             channel: GameSocketChannel.CHOOSE_WORD,
             data: askChooseWord
+        }));
+    });
+}
+
+export function sendChooseWordMessageResponse(round: CycleRound, word: string) {
+    const responseChooseWord: IDataChooseWordResponse = {
+        word: word
+    };
+
+    round.playerTurn.forEach(player => {
+        const socketUser: SocketUser | undefined = sockets.get(player.playerId);
+        if (!socketUser) return;
+
+        safeSend(socketUser, JSON.stringify({
+            channel: GameSocketChannel.CHOOSE_WORD,
+            data: responseChooseWord
         }));
     });
 }
