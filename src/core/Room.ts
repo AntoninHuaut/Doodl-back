@@ -81,8 +81,8 @@ export class Room {
 
         loggerService.debug(`Room::endGame - Room (${this.#roomId})`);
 
-        this.state = RoomState.LOBBY;
         this.round.endRound();
+        this.state = RoomState.LOBBY;
         broadcastMessage(this, JSON.stringify(getISocketMessageResponse(this)))
     }
 
