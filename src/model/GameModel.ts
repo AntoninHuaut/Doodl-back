@@ -13,6 +13,7 @@ export interface IPlayer {
 }
 
 export interface RoundData {
+    dateStartedDrawing: Date | null;
     roundCurrentCycle: number;
     anonymeWord: string;
     playerTurn: IPlayer[];

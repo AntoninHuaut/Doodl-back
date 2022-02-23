@@ -402,6 +402,7 @@ export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
 
     if (room.state !== RoomState.LOBBY) {
         infoResponse.roundData = {
+            dateStartedDrawing: room.round.dateStartedDrawing,
             anonymeWord: room.round.anonymeWord ?? "",
             roundCurrentCycle: room.round.roundCurrentCycle,
             playerTurn: room.round.playerTurn,
