@@ -17,6 +17,7 @@ export interface ISocketMessageRequest extends ISocketMessage {
 
 export interface ISocketMessageResponse extends ISocketMessage {
     data: IDataInitResponse | IMessage | IDataDrawResponse | IDataInfoResponse | IRoomConfig | IDataKickResponse | IDataChooseWordAsk;
+    error?: unknown;
 }
 
 export interface IDataInitRequest {
@@ -34,7 +35,6 @@ export interface IDataInitResponse {
 export interface IDataChatRequest {
     message: string;
 }
-
 // IDataChatResponse is equals to IMessage
 
 // IDataDrawRequest = IDraw
@@ -84,8 +84,8 @@ export enum GameSocketChannel {
     DRAW = "DRAW",
     INFO = "INFO",
     CONFIG = "CONFIG",
-    CHOOSE_WORD = "CHOOSE_WORD",
     START = "START",
+    CHOOSE_WORD = "CHOOSE_WORD",
     GUESS = "GUESS",
     KICK = "KICK"
 }

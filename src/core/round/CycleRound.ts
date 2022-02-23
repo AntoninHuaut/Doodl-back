@@ -5,7 +5,8 @@ import {getNbRandomWord, getRandomWordFromArray, revealOneLetter} from "../WordM
 import {loggerService} from "../../server.ts";
 import {appRoomConfig} from "../../config.ts";
 import {
-    broadcastMessage, getISocketMessageResponse,
+    broadcastMessage,
+    getISocketMessageResponse,
     sendAskChooseWordMessage,
     sendChooseWordMessageResponse
 } from "../../resource/socket/GameSocketResource.ts";
@@ -159,7 +160,7 @@ export default abstract class CycleRound {
                       broadcastMessageFunc: (_guessData: IDataGuessResponse | undefined) => void) {
         const hasGuess = this.isGameStarted() && message.message === this._word;
         if (hasGuess) {
-            if (this._playersGuess.includes(author)) return;
+            if (this._playerTurn.includes(author) || this._playersGuess.includes(author)) return;
 
             this.guessWord(author);
             broadcastMessageFunc({
