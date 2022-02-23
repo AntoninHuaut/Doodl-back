@@ -177,7 +177,9 @@ export default abstract class CycleRound {
         if (!this._room.isInGame()) return;
 
         const timeIsOver = this._dateStartedDrawing && new Date().getTime() > this._dateStartedDrawing.getTime() + this._room.roomConfig.timeByTurn * 1000
-        const allPlayerGuessed = this._room.players.filter(p => !this._playersGuess.includes(p)).length === 0;
+        const allPlayerGuessed = this._room.players
+            .filter(p => !this._playersGuess.includes(p) && !this._playerTurn.includes(p))
+            .length === 0;
         const roundOver: boolean = timeIsOver || this._playerTurn.length === 0 || allPlayerGuessed;
 
         if (roundOver) {
