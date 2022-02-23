@@ -2,7 +2,6 @@ import {z} from "../../deps.ts";
 import {
     GameSocketChannel,
     IDataChatRequest,
-    IDataChooseWordAsk,
     IDataChooseWordRequest,
     IDataChooseWordResponse,
     IDataDrawResponse,
@@ -118,7 +117,7 @@ export default class GameSocketResource extends WSResource {
 
                 const room = getRoomById(socketUser.roomId);
                 if (room) {
-                    broadcastMessage(room, JSON.stringify(getISocketMessageResponse(room)));
+                    sendIDataInfoResponse(room);
                 }
             };
 
@@ -220,7 +219,11 @@ function onMessageInitChannel(socketUser: SocketUser, message: ISocketMessageReq
     };
 
     safeSend(socketUser, JSON.stringify(responseInitMessage));
-    broadcastMessage(room, JSON.stringify(getISocketMessageResponse(room)));
+    sendIDataInfoResponse(room);
+
+    if (room.isInGame()) {
+        sendGuessData(room);
+    }
 }
 
 function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
@@ -229,7 +232,10 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
 
     room.round.handleChatMessage(player, chatMessage, (guessData: IDataGuessResponse | undefined) => {
         if (guessData) {
-            broadcastMessage(room, JSON.stringify(guessData));
+            broadcastMessage(room, JSON.stringify({
+                channel: GameSocketChannel.GUESS,
+                data: guessData
+            }));
         } else {
             const chatResponse: IMessage | undefined = getValidChatMessage(player, chatMessage.message);
             if (!chatResponse) return;
@@ -263,7 +269,7 @@ function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageReq
 
 function onMessageInfoChannel(socketUser: SocketUser) {
     const [, room] = checkInitAndGetRoom(socketUser);
-    safeSend(socketUser, JSON.stringify(getISocketMessageResponse(room)));
+    sendIDataInfoResponse(room);
 }
 
 function onMessageConfigChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
@@ -294,7 +300,7 @@ function onMessageStartChannel(socketUser: SocketUser) {
 
     startGame(room);
     safeSend(socketUser, JSON.stringify(responseStart));
-    broadcastMessage(room, JSON.stringify(getISocketMessageResponse(room)));
+    sendIDataInfoResponse(room);
 }
 
 function onMessageChooseWordChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
@@ -328,7 +334,7 @@ export function broadcastMessage(room: Room, message: string, ignorePlayersId: s
 }
 
 export function sendAskChooseWordMessage(round: CycleRound) {
-    const askChooseWord: IDataChooseWordAsk = {
+    const askChooseWord: IDataChooseWordResponse = {
         words: round.possibleWords
     };
 
@@ -339,22 +345,6 @@ export function sendAskChooseWordMessage(round: CycleRound) {
         safeSend(socketUser, JSON.stringify({
             channel: GameSocketChannel.CHOOSE_WORD,
             data: askChooseWord
-        }));
-    });
-}
-
-export function sendChooseWordMessageResponse(round: CycleRound, word: string) {
-    const responseChooseWord: IDataChooseWordResponse = {
-        word: word
-    };
-
-    round.playerTurn.forEach(player => {
-        const socketUser: SocketUser | undefined = sockets.get(player.playerId);
-        if (!socketUser) return;
-
-        safeSend(socketUser, JSON.stringify({
-            channel: GameSocketChannel.CHOOSE_WORD,
-            data: responseChooseWord
         }));
     });
 }
@@ -392,7 +382,20 @@ export function kickPlayer(playerId: string, reason: string | undefined) {
     sockets.delete(playerId);
 }
 
-export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
+export function sendGuessData(room: Room): void {
+    broadcastMessage(room, JSON.stringify({
+        channel: GameSocketChannel.GUESS,
+        data: {
+            playersGuess: room.round.playersGuess
+        }
+    }));
+}
+
+export function sendIDataInfoResponse(room: Room): void {
+    room.players.forEach((player: IPlayer) => sendIDataInfoResponseToPlayer(player, room));
+}
+
+export function sendIDataInfoResponseToPlayer(player: IPlayer, room: Room): void {
     const infoResponse: IDataInfoResponse = {
         roomState: room.state,
         playerAdminId: room.playerAdminId,
@@ -401,16 +404,23 @@ export function getISocketMessageResponse(room: Room): ISocketMessageResponse {
     };
 
     if (room.state !== RoomState.LOBBY) {
+        const word = (room.round.hasGuessOrDrawer(player) ? room.round.word : room.round.anonymeWord) ?? "";
+
         infoResponse.roundData = {
             dateStartedDrawing: room.round.dateStartedDrawing,
-            anonymeWord: room.round.anonymeWord ?? "",
+            word: word,
             roundCurrentCycle: room.round.roundCurrentCycle,
             playerTurn: room.round.playerTurn,
         };
     }
 
-    return {
+    const dataToSend: ISocketMessageResponse = {
         channel: GameSocketChannel.INFO,
         data: infoResponse
     };
+
+    const socketUser: SocketUser | undefined = sockets.get(player.playerId);
+    if (!socketUser) return;
+
+    safeSend(socketUser, JSON.stringify(dataToSend));
 }

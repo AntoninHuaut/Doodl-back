@@ -16,7 +16,8 @@ export interface ISocketMessageRequest extends ISocketMessage {
 }
 
 export interface ISocketMessageResponse extends ISocketMessage {
-    data: IDataInitResponse | IMessage | IDataDrawResponse | IDataInfoResponse | IRoomConfig | IDataKickResponse | IDataChooseWordAsk;
+    data: IDataInitResponse | IMessage | IDataDrawResponse | IDataInfoResponse | IRoomConfig
+        | IDataKickResponse | IDataChooseWordResponse;
     error?: unknown;
 }
 
@@ -35,6 +36,7 @@ export interface IDataInitResponse {
 export interface IDataChatRequest {
     message: string;
 }
+
 // IDataChatResponse is equals to IMessage
 
 // IDataDrawRequest = IDraw
@@ -59,10 +61,6 @@ export interface IDataChooseWordRequest {
 }
 
 export interface IDataChooseWordResponse {
-    word: string;
-}
-
-export interface IDataChooseWordAsk {
     words: string[];
 }
 

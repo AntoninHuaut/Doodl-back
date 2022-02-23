@@ -2,7 +2,7 @@ import CycleRound from './round/CycleRound.ts';
 import ClassicCycleRound from './round/ClassicCycleRound.ts';
 import {GameMode, IMessage, IPlayer, IRoomConfig, IRoomStatus, RoomState} from '../model/GameModel.ts';
 import InvalidState from '../model/exception/InvalidState.ts';
-import {broadcastMessage, getISocketMessageResponse} from "../resource/socket/GameSocketResource.ts";
+import {sendIDataInfoResponse} from "../resource/socket/GameSocketResource.ts";
 import {loggerService} from "../server.ts";
 
 export class Room {
@@ -83,7 +83,7 @@ export class Room {
 
         this.round.endRound();
         this.state = RoomState.LOBBY;
-        broadcastMessage(this, JSON.stringify(getISocketMessageResponse(this)))
+        sendIDataInfoResponse(this);
     }
 
     set roomConfig(config: IRoomConfig) {

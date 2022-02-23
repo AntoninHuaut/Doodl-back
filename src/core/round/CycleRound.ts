@@ -5,10 +5,9 @@ import {getNbRandomWord, getRandomWordFromArray, revealOneLetter} from "../WordM
 import {loggerService} from "../../server.ts";
 import {appRoomConfig} from "../../config.ts";
 import {
-    broadcastMessage,
-    getISocketMessageResponse,
-    sendAskChooseWordMessage,
-    sendChooseWordMessageResponse
+    sendAskChooseWordMessage, sendGuessData,
+    sendIDataInfoResponse,
+    sendIDataInfoResponseToPlayer
 } from "../../resource/socket/GameSocketResource.ts";
 
 export default abstract class CycleRound {
@@ -104,8 +103,7 @@ export default abstract class CycleRound {
         this._dateStartedDrawing = new Date();
         this._intervalId = setInterval(() => this.checkRoundOver(), 1000);
 
-        sendChooseWordMessageResponse(this, word);
-        broadcastMessage(this._room, JSON.stringify(getISocketMessageResponse(this._room)));
+        sendIDataInfoResponse(this._room);
     }
 
     #clearRunnable() {
@@ -158,14 +156,14 @@ export default abstract class CycleRound {
 
     handleChatMessage(author: IPlayer, message: IDataChatRequest,
                       broadcastMessageFunc: (_guessData: IDataGuessResponse | undefined) => void) {
-        const hasGuess = this.isGameStarted() && message.message === this._word;
+        const hasGuess = this.isGameStarted() && message.message.toLowerCase() === this._word?.toLowerCase();
         if (hasGuess) {
             if (this._playerTurn.includes(author) || this._playersGuess.includes(author)) return;
 
             this.guessWord(author);
-            broadcastMessageFunc({
-                playersGuess: this._playersGuess
-            });
+
+            sendIDataInfoResponseToPlayer(author, this._room);
+            sendGuessData(this._room);
         } else {
             broadcastMessageFunc(undefined);
         }
@@ -177,9 +175,7 @@ export default abstract class CycleRound {
         if (!this._room.isInGame()) return;
 
         const timeIsOver = this._dateStartedDrawing && new Date().getTime() > this._dateStartedDrawing.getTime() + this._room.roomConfig.timeByTurn * 1000
-        const allPlayerGuessed = this._room.players
-            .filter(p => !this._playersGuess.includes(p) && !this._playerTurn.includes(p))
-            .length === 0;
+        const allPlayerGuessed = this._room.players.filter(p => !this.hasGuessOrDrawer(p)).length === 0;
         const roundOver: boolean = timeIsOver || this._playerTurn.length === 0 || allPlayerGuessed;
 
         if (roundOver) {
@@ -208,12 +204,20 @@ export default abstract class CycleRound {
         loggerService.debug(`Round ${this._room.roomId} - PlayerTurn: ${JSON.stringify(this.playerTurn, null, 2)}`);
     }
 
+    hasGuessOrDrawer(player: IPlayer): boolean {
+        return this._playersGuess.includes(player) || this._playerTurn.includes(player);
+    }
+
     canPlayerDraw(player: IPlayer): boolean {
         return this._playerTurn.includes(player);
     }
 
     get anonymeWord() {
         return this._anonymeWord;
+    }
+
+    get word() {
+        return this._word;
     }
 
     get playersGuess() {
