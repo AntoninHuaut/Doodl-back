@@ -101,11 +101,11 @@ export default abstract class CycleRound {
 
         this.#clearUserChooseWordTimeout();
 
-        sendChooseWordMessageResponse(this, word);
-        broadcastMessage(this._room, JSON.stringify(getISocketMessageResponse(this._room)));
-
         this._dateStartedDrawing = new Date();
         this._intervalId = setInterval(() => this.checkRoundOver(), 1000);
+
+        sendChooseWordMessageResponse(this, word);
+        broadcastMessage(this._room, JSON.stringify(getISocketMessageResponse(this._room)));
     }
 
     #clearRunnable() {
