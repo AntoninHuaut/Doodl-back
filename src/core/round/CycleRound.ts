@@ -5,12 +5,17 @@ import {getNbRandomWord, getRandomWordFromArray, revealOneLetter} from "../WordM
 import {loggerService} from "../../server.ts";
 import {appRoomConfig} from "../../config.ts";
 import {
-    sendAskChooseWordMessage, sendGuessData,
+    sendAskChooseWordMessage,
+    sendGuessData,
     sendIDataInfoResponse,
     sendIDataInfoResponseToPlayer
 } from "../../resource/socket/GameSocketResource.ts";
 
 export default abstract class CycleRound {
+
+    private static DELAY_NEXT_ROUND = 5 * 1000;
+    private static DELAY_END_GAME = 10 * 1000;
+    private static DELAY_CHOOSE_WORD = 10 * 1000;
 
     protected _room: Room;
     protected _dateStartedDrawing: Date | null;
@@ -26,6 +31,7 @@ export default abstract class CycleRound {
     private readonly _draws: IDraw[];
     private _intervalId: number | null;
     private _timeoutNextRoundId: number | null;
+    private _timeoutEndGameId: number | null;
     private _timeoutUserChooseWord: number | null;
 
     private _currentCycleRoundNumber = 0;
@@ -39,6 +45,7 @@ export default abstract class CycleRound {
         this._playerNoYetPlayedCurrentCycle = [];
         this._intervalId = null;
         this._timeoutNextRoundId = null;
+        this._timeoutEndGameId = null;
         this._timeoutUserChooseWord = null;
         this._word = null;
         this._anonymeWord = null;
@@ -65,9 +72,10 @@ export default abstract class CycleRound {
         this._room.state = RoomState.CHOOSE_WORD;
         sendAskChooseWordMessage(this);
 
-        this._timeoutUserChooseWord = setInterval(() => {
-            this.setUserChooseWord(getRandomWordFromArray(this._possibleWords))
-        }, 10000);
+        this._timeoutUserChooseWord = setTimeout(() => {
+            this._timeoutUserChooseWord = null;
+            this.setUserChooseWord(getRandomWordFromArray(this._possibleWords));
+        }, CycleRound.DELAY_CHOOSE_WORD);
     }
 
     endRound() {
@@ -88,6 +96,54 @@ export default abstract class CycleRound {
         this.#clearRunnable();
     }
 
+    nextRound() {
+        if (!this._room.isInGame()) return;
+
+        loggerService.debug(`Round::nextRound - Room (${this._room.roomId})`);
+
+        this.endRound()
+        if (this._currentCycleRoundNumber < this._room.roomConfig.cycleRoundByGame) {
+            this.startRound();
+        } else {
+            this._room.state = RoomState.END_GAME;
+            sendIDataInfoResponse(this._room);
+
+            this.#clearEndGameTimeout();
+            this._timeoutEndGameId = setTimeout(() => {
+                this._timeoutEndGameId = null;
+                this._room.endGame();
+            }, CycleRound.DELAY_END_GAME);
+        }
+    }
+
+    #clearRunnable() {
+        if (this._intervalId) {
+            clearInterval(this._intervalId);
+            this._intervalId = null;
+        }
+        if (this._timeoutNextRoundId) {
+            clearTimeout(this._timeoutNextRoundId);
+            this._timeoutNextRoundId = null;
+        }
+
+        this.#clearEndGameTimeout();
+        this.#clearUserChooseWordTimeout();
+    }
+
+    #clearEndGameTimeout() {
+        if (this._timeoutEndGameId) {
+            clearTimeout(this._timeoutEndGameId);
+            this._timeoutEndGameId = null;
+        }
+    }
+
+    #clearUserChooseWordTimeout() {
+        if (this._timeoutUserChooseWord) {
+            clearTimeout(this._timeoutUserChooseWord);
+            this._timeoutUserChooseWord = null;
+        }
+    }
+
     setUserChooseWord(word: string) {
         if (this._room.state !== RoomState.CHOOSE_WORD) return;
         if (!this._possibleWords.includes(word)) return;
@@ -104,38 +160,6 @@ export default abstract class CycleRound {
         this._intervalId = setInterval(() => this.checkRoundOver(), 1000);
 
         sendIDataInfoResponse(this._room);
-    }
-
-    #clearRunnable() {
-        if (this._intervalId) {
-            clearInterval(this._intervalId);
-            this._intervalId = null;
-        }
-        if (this._timeoutNextRoundId) {
-            clearTimeout(this._timeoutNextRoundId);
-            this._timeoutNextRoundId = null;
-        }
-        this.#clearUserChooseWordTimeout();
-    }
-
-    #clearUserChooseWordTimeout() {
-        if (this._timeoutUserChooseWord) {
-            clearTimeout(this._timeoutUserChooseWord);
-            this._timeoutUserChooseWord = null;
-        }
-    }
-
-    nextRound() {
-        if (!this._room.isInGame()) return;
-
-        loggerService.debug(`Round::nextRound - Room (${this._room.roomId})`);
-
-        this.endRound()
-        if (this._currentCycleRoundNumber < this._room.roomConfig.cycleRoundByGame) {
-            this.startRound();
-        } else {
-            this._room.endGame();
-        }
     }
 
     removePlayerId(playerId: string) {
@@ -182,9 +206,13 @@ export default abstract class CycleRound {
             loggerService.debug(`Round::isRoundOver - Room (${this._room.roomId}) - round over`);
             this.#clearRunnable();
 
-            const delay = 5 * 1000;
-            // TODO end round websocket with ${delay} ms
-            this._timeoutNextRoundId = setTimeout(() => this.nextRound(), delay);
+            this._room.state = RoomState.END_ROUND;
+            sendIDataInfoResponse(this._room);
+
+            this._timeoutNextRoundId = setTimeout(() => {
+                this._timeoutNextRoundId = null;
+                this.nextRound();
+            }, CycleRound.DELAY_NEXT_ROUND);
         }
     }
 
