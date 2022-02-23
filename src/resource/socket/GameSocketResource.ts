@@ -254,6 +254,7 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
 function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
     const [player, room] = checkInitAndGetRoom(socketUser);
     if (!isPlayerCanDraw(player, room)) throw new InvalidPermission("You don't have the permission to draw");
+    if (room.state !== RoomState.DRAWING) throw new InvalidState("The room must be in the DRAWING state");
 
     const drawMessage: IDraw = DataDrawRequestSchema.parse(message.data);
     const drawMessageEnhance: IDataDrawResponse = {...drawMessage, draftsman: player};
