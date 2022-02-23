@@ -149,13 +149,11 @@ export default abstract class CycleRound {
         if (!this._possibleWords.includes(word)) return;
 
         loggerService.debug(`Round::setUserChooseWord - Room ${this._room.roomId} with word ${word}`);
+        this.#clearUserChooseWordTimeout();
 
         this._room.state = RoomState.DRAWING;
         this._word = word;
         this._anonymeWord = revealOneLetter(this._word);
-
-        this.#clearUserChooseWordTimeout();
-
         this._dateStartedDrawing = new Date();
         this._intervalId = setInterval(() => this.checkRoundOver(), 1000);
 
