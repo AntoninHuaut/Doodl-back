@@ -151,7 +151,7 @@ function onDeletePlayerMessage(socket: WebSocket, message: IAdminSocketMessageRe
     }
 
     setTimeout(() => {
-        checkIfRoomAvailableValide(socketUser.roomId);
+        checkIfRoomAvailableValide(roomId);
     }, 10);
 }
 
