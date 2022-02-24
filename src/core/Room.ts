@@ -2,7 +2,7 @@ import CycleRound from './round/CycleRound.ts';
 import ClassicCycleRound from './round/ClassicCycleRound.ts';
 import {GameMode, IMessage, IPlayer, IRoomConfig, IRoomStatus, RoomState} from '../model/GameModel.ts';
 import InvalidState from '../model/exception/InvalidState.ts';
-import {broadcastMessage, getISocketMessageResponse} from "../resource/socket/GameSocketResource.ts";
+import {sendIDataInfoResponse} from "../resource/socket/GameSocketResource.ts";
 import {loggerService} from "../server.ts";
 
 export class Room {
@@ -69,19 +69,21 @@ export class Room {
         loggerService.debug(`Room::startGame - Room (${this.#roomId})`);
 
         this.#createRound();
-        this.players.forEach(player => player.point = 0);
-        this.state = RoomState.INGAME;
+        this.players.forEach(player => {
+            player.totalPoint = 0;
+            player.roundPoint = 0
+        });
         this.round.startRound();
     }
 
     endGame() {
-        if (this.#state !== RoomState.INGAME) return;
+        if (!this.isInGame()) return;
 
         loggerService.debug(`Room::endGame - Room (${this.#roomId})`);
 
-        this.state = RoomState.LOBBY;
         this.round.endRound();
-        broadcastMessage(this, JSON.stringify(getISocketMessageResponse(this)))
+        this.state = RoomState.LOBBY;
+        sendIDataInfoResponse(this);
     }
 
     set roomConfig(config: IRoomConfig) {
@@ -109,6 +111,10 @@ export class Room {
 
     isPlayerAdmin(player: IPlayer) {
         return player.playerId === this.#playerAdminId;
+    }
+
+    isInGame(): boolean {
+        return this.#state !== RoomState.LOBBY;
     }
 
     get roomConfig(): IRoomConfig {
