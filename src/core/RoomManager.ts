@@ -61,10 +61,13 @@ export function checkIfRoomAvailableValide(roomId: string | undefined) {
         if (!room) return;
 
         if (room.players.length === 0) {
+            loggerService.debug(`RoomManager::checkIfRoomAvailableValide playersList empty => deleteRoom ${room.roomId}`);
             deleteRoom(room);
         } else if (room.players.length < appRoomConfig.minPlayerPerRoom) {
+            loggerService.debug(`RoomManager::checkIfRoomAvailableValide playersList (${room.players.length}) < ${appRoomConfig.minPlayerPerRoom} => endGame ${room.roomId}`);
             room.endGame();
         } else {
+            loggerService.debug(`RoomManager::checkIfRoomAvailableValide checkRoundOver ${room.roomId}`);
             room.round.checkRoundOver();
         }
     }, Math.floor(Math.random() * 90 + 10));
