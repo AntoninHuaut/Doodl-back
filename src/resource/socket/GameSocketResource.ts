@@ -424,7 +424,8 @@ export function sendIDataInfoResponseToPlayer(player: IPlayer, room: Room): void
     };
 
     if (room.state !== RoomState.LOBBY) {
-        const word = (room.round.hasGuessOrDrawer(player) ? room.round.word : room.round.anonymeWord) ?? "";
+        const canHasRealWord = (room.state !== RoomState.DRAWING || room.round.hasGuessOrDrawer(player));
+        const word = (canHasRealWord ? room.round.word : room.round.anonymeWord) ?? "";
 
         infoResponse.roundData = {
             dateStartedDrawing: room.round.dateStartedDrawing,
