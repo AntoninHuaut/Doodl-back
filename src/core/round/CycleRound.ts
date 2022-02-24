@@ -71,6 +71,7 @@ export default abstract class CycleRound {
 
         this._room.state = RoomState.CHOOSE_WORD;
         sendAskChooseWordMessage(this);
+        sendIDataInfoResponse(this._room);
 
         this._timeoutUserChooseWord = setTimeout(() => {
             this._timeoutUserChooseWord = null;
