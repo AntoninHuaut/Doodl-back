@@ -103,11 +103,9 @@ export default abstract class CycleRound {
         if (!this._room.isInGame()) return;
 
         loggerService.debug(`Round::nextRound - Room (${this._room.roomId})`);
+        this.endRound();
 
-        this.endRound()
-        if (this._currentCycleRoundNumber < this._room.roomConfig.cycleRoundByGame) {
-            this.startRound();
-        } else {
+        if (this._playerNoYetPlayedCurrentCycle.length === 0 && this._currentCycleRoundNumber === this._room.roomConfig.cycleRoundByGame) {
             this._room.state = RoomState.END_GAME;
             sendIDataInfoResponse(this._room);
 
@@ -116,6 +114,8 @@ export default abstract class CycleRound {
                 this._timeoutEndGameId = null;
                 this._room.endGame();
             }, CycleRound.DELAY_END_GAME);
+        } else {
+            this.startRound();
         }
     }
 
@@ -178,7 +178,7 @@ export default abstract class CycleRound {
     }
 
     handleChatMessage(author: IPlayer, message: IDataChatRequest) {
-        const hasGuess = this.isGameStarted() && message.message.toLowerCase() === this._word?.toLowerCase();
+        const hasGuess = this._room.state === RoomState.DRAWING && message.message.toLowerCase() === this._word?.toLowerCase();
         const isSpectatorMessage = this.hasAlreadyGuessOrIsDrawer(author);
 
         if (hasGuess) {
