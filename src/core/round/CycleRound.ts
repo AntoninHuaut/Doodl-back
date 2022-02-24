@@ -165,8 +165,6 @@ export default abstract class CycleRound {
         this._playerTurn = this._playerTurn.filter(p => p.playerId !== playerId);
         this._playersGuess = this._playersGuess.filter(p => p.playerId !== playerId);
         this._playerNoYetPlayedCurrentCycle = this._playerNoYetPlayedCurrentCycle.filter(p => p.playerId !== playerId);
-
-        this.checkRoundOver();
     }
 
     addDraw(draw: IDraw) {
@@ -194,7 +192,7 @@ export default abstract class CycleRound {
 
     protected abstract guessWord(guessPlayer: IPlayer): void;
 
-    private checkRoundOver() {
+    public checkRoundOver() {
         if (!this._room.isInGame()) return;
 
         const timeIsOver = this._dateStartedDrawing && new Date().getTime() > this._dateStartedDrawing.getTime() + this._room.roomConfig.timeByTurn * 1000

@@ -15,7 +15,7 @@ import {
 } from '../../model/GameSocketModel.ts';
 import {loggerService} from '../../server.ts';
 import {createPlayer, deletePlayer} from '../../core/PlayerManager.ts';
-import {getRoomById, startGame} from '../../core/RoomManager.ts';
+import {checkIfRoomAvailableValide, getRoomById, startGame} from '../../core/RoomManager.ts';
 import {Room} from '../../core/Room.ts';
 import InvalidParameterValue from '../../model/exception/InvalidParameterValue.ts';
 import SocketInitNotPerformed from '../../model/exception/SocketInitNotPerformed.ts';
@@ -109,27 +109,39 @@ export default class GameSocketResource extends WSResource {
             };
 
             socket.onclose = () => {
-                const socketUser: SocketUser | undefined = sockets.get(socketUUID);
-                if (socketUser == null) return;
+                try {
+                    const socketUser: SocketUser | undefined = sockets.get(socketUUID);
+                    if (socketUser == null) return;
 
-                deletePlayer(socketUser.socketUUID, socketUser.roomId);
-                kickPlayer(socketUser.socketUUID, "Connection closed");
+                    sockets.delete(socketUser.socketUUID);
+                    deletePlayer(socketUser.socketUUID, socketUser.roomId);
 
-                const room = getRoomById(socketUser.roomId);
-                if (room) {
-                    sendIDataInfoResponse(room);
+                    checkIfRoomAvailableValide(socketUser.roomId);
+
+                    const room = getRoomById(socketUser.roomId);
+                    if (room) {
+                        sendIDataInfoResponse(room);
+                    }
+                } catch (err) {
+                    loggerService.error(`[1] WebSocket - WebSocket error: ${
+                        JSON.stringify(this.getErrorToPrint(err), null, 2)
+                    }`);
                 }
             };
 
             socket.onerror = (e: Event | ErrorEvent) => {
-                e.preventDefault();
+                try {
+                    const socketUser: SocketUser | undefined = sockets.get(socketUUID);
+                    if (socketUser == null) return;
 
-                const socketUser: SocketUser | undefined = sockets.get(socketUUID);
-                if (socketUser == null) return;
-
-                loggerService.error(`WebSocket ${socketUser.socketUUID} - WebSocket error: ${
-                    JSON.stringify(this.getErrorToPrint(e), null, 2)
-                }`);
+                    loggerService.error(`WebSocket ${socketUser.socketUUID} - WebSocket error: ${
+                        JSON.stringify(this.getErrorToPrint(e), null, 2)
+                    }`);
+                } catch (err) {
+                    loggerService.error(`[2] WebSocket - WebSocket error: ${
+                        JSON.stringify(this.getErrorToPrint(err), null, 2)
+                    }`);
+                }
             }
         } catch (error) {
             loggerService.error(`WebSocket ${socketUUID ?? 'Unknown'} - Error: ${
@@ -366,17 +378,20 @@ export function kickPlayer(playerId: string, reason: string | undefined) {
 
     loggerService.debug(`WebSocket ${socketUser.socketUUID} - KICK (reason: "${reason}")`);
 
-    const socket = socketUser.socket;
-    const kickResponse: IDataKickResponse = {
-        reason: reason
-    };
-
     try {
+        const socket = socketUser.socket;
+        const kickResponse: IDataKickResponse = {
+            reason: reason
+        };
+
         safeSend(socketUser, JSON.stringify({
             channel: GameSocketChannel.KICK,
             data: kickResponse
         }));
-        socket.close(1000);
+
+        if (socket?.readyState === socket.OPEN) {
+            socket.close();
+        }
     } catch (_ex) {
         // Ignore
     }
@@ -407,7 +422,8 @@ export function sendIDataInfoResponseToPlayer(player: IPlayer, room: Room): void
     };
 
     if (room.state !== RoomState.LOBBY) {
-        const word = (room.round.hasGuessOrDrawer(player) ? room.round.word : room.round.anonymeWord) ?? "";
+        const canHasRealWord = (room.state !== RoomState.DRAWING || room.round.hasGuessOrDrawer(player));
+        const word = (canHasRealWord ? room.round.word : room.round.anonymeWord) ?? "";
 
         infoResponse.roundData = {
             dateStartedDrawing: room.round.dateStartedDrawing,

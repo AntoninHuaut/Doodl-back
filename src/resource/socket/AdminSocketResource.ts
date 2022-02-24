@@ -9,7 +9,7 @@ import {
     IAdminSocketMessage,
     IAdminSocketMessageRequest
 } from "../../model/AdminSocketModel.ts";
-import {deleteRoom, getRoomById, getRoomList} from "../../core/RoomManager.ts";
+import {checkIfRoomAvailableValide, deleteRoom, getRoomById, getRoomList} from "../../core/RoomManager.ts";
 import {getSocketsCount, kickPlayer, sendIDataInfoResponse} from "./GameSocketResource.ts";
 import {z} from "https://deno.land/x/zod@v3.11.6/index.ts";
 import {IErrorSocketMessageResponse} from "../../model/GlobalSocketModel.ts";
@@ -58,8 +58,6 @@ export default class AdminSocketResource extends WSResource {
             };
 
             socket.onerror = (e: Event | ErrorEvent) => {
-                e.preventDefault();
-                
                 loggerService.error(`WebSocket Admin - Error handled: ${
                     JSON.stringify(this.getErrorToPrint(e), null, 2)
                 }`);
@@ -151,6 +149,8 @@ function onDeletePlayerMessage(socket: WebSocket, message: IAdminSocketMessageRe
     if (room != null) {
         sendIDataInfoResponse(room);
     }
+
+    checkIfRoomAvailableValide(roomId);
 }
 
 function onDeleteRoomMessage(socket: WebSocket, message: IAdminSocketMessageRequest) {
