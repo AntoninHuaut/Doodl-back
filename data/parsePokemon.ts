@@ -357,8 +357,8 @@ const json = [
     },
     {
         "ID": "#032",
-        "Nom": "Nidoran?",
-        "Nom_anglais": "Nidoran?",
+        "Nom": "Nidoran",
+        "Nom_anglais": "Nidoran",
         "Type": "poison",
         "Attaque": "57",
         "Attaque_speciale": "40",
