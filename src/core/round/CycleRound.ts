@@ -1,21 +1,23 @@
-import {DrawTool, IDraw, IPlayer, RoomState} from '../../model/GameModel.ts';
-import {IDataChatRequest, IDataGuessResponse} from '../../model/GameSocketModel.ts';
+import {DrawTool, IDraw, IMessage, IPlayer, RoomState} from '../../model/GameModel.ts';
+import {GameSocketChannel, IDataChatRequest, ISocketMessageResponse} from '../../model/GameSocketModel.ts';
 import {Room} from "../Room.ts";
 import {getNbRandomWord, getRandomWordFromArray, revealOneLetter} from "../WordManager.ts";
 import {loggerService} from "../../server.ts";
 import {appRoomConfig} from "../../config.ts";
 import {
+    broadcastMessage,
     sendAskChooseWordMessage,
     sendGuessData,
     sendIDataInfoResponse,
     sendIDataInfoResponseToPlayer
 } from "../../resource/socket/GameSocketResource.ts";
+import {getValidChatMessage} from "../validator/ChatMessageValidator.ts";
 
 export default abstract class CycleRound {
 
     private static DELAY_NEXT_ROUND = 5 * 1000;
     private static DELAY_END_GAME = 10 * 1000;
-    private static DELAY_CHOOSE_WORD = 10 * 1000;
+    private static DELAY_CHOOSE_WORD = 15 * 1000;
 
     protected _room: Room;
     protected _dateStartedDrawing: Date | null;
@@ -101,11 +103,9 @@ export default abstract class CycleRound {
         if (!this._room.isInGame()) return;
 
         loggerService.debug(`Round::nextRound - Room (${this._room.roomId})`);
+        this.endRound();
 
-        this.endRound()
-        if (this._currentCycleRoundNumber < this._room.roomConfig.cycleRoundByGame) {
-            this.startRound();
-        } else {
+        if (this._playerNoYetPlayedCurrentCycle.length === 0 && this._currentCycleRoundNumber === this._room.roomConfig.cycleRoundByGame) {
             this._room.state = RoomState.END_GAME;
             sendIDataInfoResponse(this._room);
 
@@ -114,6 +114,8 @@ export default abstract class CycleRound {
                 this._timeoutEndGameId = null;
                 this._room.endGame();
             }, CycleRound.DELAY_END_GAME);
+        } else {
+            this.startRound();
         }
     }
 
@@ -175,19 +177,39 @@ export default abstract class CycleRound {
         }
     }
 
-    handleChatMessage(author: IPlayer, message: IDataChatRequest,
-                      broadcastMessageFunc: (_guessData: IDataGuessResponse | undefined) => void) {
-        const hasGuess = this.isGameStarted() && message.message.toLowerCase() === this._word?.toLowerCase();
+    handleChatMessage(author: IPlayer, message: IDataChatRequest) {
+        const hasGuess = this._room.state === RoomState.DRAWING && message.message.toLowerCase() === this._word?.toLowerCase();
+        const isSpectatorMessage = this.hasAlreadyGuessOrIsDrawer(author);
+
         if (hasGuess) {
-            if (this._playerTurn.includes(author) || this._playersGuess.includes(author)) return;
+            if (isSpectatorMessage) return;
 
             this.guessWord(author);
 
             sendIDataInfoResponseToPlayer(author, this._room);
             sendGuessData(this._room);
         } else {
-            broadcastMessageFunc(undefined);
+            const chatResponse: IMessage | undefined = getValidChatMessage(author, message.message, isSpectatorMessage);
+            if (!chatResponse) return;
+
+            const responseChatMessage: ISocketMessageResponse = {
+                channel: GameSocketChannel.CHAT,
+                data: chatResponse
+            };
+
+            this._room.addMessage(chatResponse);
+
+            let ignoresPlayersId: string[] = [];
+            if (isSpectatorMessage) {
+                ignoresPlayersId = this._room.players.filter(p => !this.hasAlreadyGuessOrIsDrawer(p)).map(p => p.playerId);
+            }
+
+            broadcastMessage(this._room, JSON.stringify(responseChatMessage), ignoresPlayersId);
         }
+    }
+
+    private hasAlreadyGuessOrIsDrawer(player: IPlayer): boolean {
+        return this._playerTurn.includes(player) || this._playersGuess.includes(player);
     }
 
     protected abstract guessWord(guessPlayer: IPlayer): void;
