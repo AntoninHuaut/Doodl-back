@@ -122,6 +122,8 @@ export default class GameSocketResource extends WSResource {
             };
 
             socket.onerror = (e: Event | ErrorEvent) => {
+                e.preventDefault();
+
                 const socketUser: SocketUser | undefined = sockets.get(socketUUID);
                 if (socketUser == null) return;
 
