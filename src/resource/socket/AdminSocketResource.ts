@@ -10,7 +10,7 @@ import {
     IAdminSocketMessageRequest
 } from "../../model/AdminSocketModel.ts";
 import {deleteRoom, getRoomById, getRoomList} from "../../core/RoomManager.ts";
-import {getSocketsCount, kickPlayer} from "./GameSocketResource.ts";
+import {getSocketsCount, kickPlayer, sendIDataInfoResponse} from "./GameSocketResource.ts";
 import {z} from "https://deno.land/x/zod@v3.11.6/index.ts";
 import {IErrorSocketMessageResponse} from "../../model/GlobalSocketModel.ts";
 import {deletePlayer} from "../../core/PlayerManager.ts";
@@ -143,6 +143,12 @@ function onDeletePlayerMessage(socket: WebSocket, message: IAdminSocketMessageRe
     };
 
     safeSend(socket, JSON.stringify(kickResponse));
+
+    const roomId = deletePlayerRequest.roomId;
+    const room: Room | undefined = getRoomById(roomId);
+    if (room != null) {
+        sendIDataInfoResponse(room);
+    }
 }
 
 function onDeleteRoomMessage(socket: WebSocket, message: IAdminSocketMessageRequest) {
