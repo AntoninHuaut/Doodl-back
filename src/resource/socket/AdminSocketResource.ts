@@ -58,11 +58,17 @@ export default class AdminSocketResource extends WSResource {
             };
 
             socket.onerror = (e: Event | ErrorEvent) => {
-                e.preventDefault();
-                
-                loggerService.error(`WebSocket Admin - Error handled: ${
-                    JSON.stringify(this.getErrorToPrint(e), null, 2)
-                }`);
+                try {
+                    e.preventDefault();
+
+                    loggerService.error(`WebSocket Admin - Error handled: ${
+                        JSON.stringify(this.getErrorToPrint(e), null, 2)
+                    }`);
+                } catch (err) {
+                    loggerService.error(`WebSocket - WebSocket error: ${
+                        JSON.stringify(this.getErrorToPrint(err), null, 2)
+                    }`);
+                }
             };
         } catch (error) {
             loggerService.error(`WebSocket Admin - Error: ${

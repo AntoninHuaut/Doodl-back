@@ -122,14 +122,20 @@ export default class GameSocketResource extends WSResource {
             };
 
             socket.onerror = (e: Event | ErrorEvent) => {
-                e.preventDefault();
+                try {
+                    e.preventDefault();
 
-                const socketUser: SocketUser | undefined = sockets.get(socketUUID);
-                if (socketUser == null) return;
+                    const socketUser: SocketUser | undefined = sockets.get(socketUUID);
+                    if (socketUser == null) return;
 
-                loggerService.error(`WebSocket ${socketUser.socketUUID} - WebSocket error: ${
-                    JSON.stringify(this.getErrorToPrint(e), null, 2)
-                }`);
+                    loggerService.error(`WebSocket ${socketUser.socketUUID} - WebSocket error: ${
+                        JSON.stringify(this.getErrorToPrint(e), null, 2)
+                    }`);
+                } catch (err) {
+                    loggerService.error(`WebSocket - WebSocket error: ${
+                        JSON.stringify(this.getErrorToPrint(err), null, 2)
+                    }`);
+                }
             }
         } catch (error) {
             loggerService.error(`WebSocket ${socketUUID ?? 'Unknown'} - Error: ${
