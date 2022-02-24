@@ -56,16 +56,18 @@ export function removePlayerIdToRoom(playerId: string, room: Room) {
 }
 
 export function checkIfRoomAvailableValide(roomId: string | undefined) {
-    const room: Room | undefined = getRoomById(roomId);
-    if (!room) return;
+    setTimeout(() => {
+        const room: Room | undefined = getRoomById(roomId);
+        if (!room) return;
 
-    if (room.players.length === 0) {
-        deleteRoom(room);
-    } else if (room.players.length < appRoomConfig.minPlayerPerRoom) {
-        room.endGame();
-    } else {
-        room.round.checkRoundOver();
-    }
+        if (room.players.length === 0) {
+            deleteRoom(room);
+        } else if (room.players.length < appRoomConfig.minPlayerPerRoom) {
+            room.endGame();
+        } else {
+            room.round.checkRoundOver();
+        }
+    }, Math.floor(Math.random() * 90 + 10));
 }
 
 export function startGame(room: Room) {

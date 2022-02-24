@@ -116,9 +116,7 @@ export default class GameSocketResource extends WSResource {
                     sockets.delete(socketUser.socketUUID);
                     deletePlayer(socketUser.socketUUID, socketUser.roomId);
 
-                    setTimeout(() => {
-                        checkIfRoomAvailableValide(socketUser.roomId);
-                    }, 10);
+                    checkIfRoomAvailableValide(socketUser.roomId);
 
                     const room = getRoomById(socketUser.roomId);
                     if (room) {
