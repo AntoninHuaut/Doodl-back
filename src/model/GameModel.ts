@@ -29,6 +29,7 @@ export interface IMessage {
     author: IPlayer;
     message: string;
     timestamp: Date;
+    isSpectator: boolean;
 }
 
 export interface ICoordinate {

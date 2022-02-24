@@ -1,15 +1,17 @@
-import {DrawTool, IDraw, IPlayer, RoomState} from '../../model/GameModel.ts';
-import {IDataChatRequest, IDataGuessResponse} from '../../model/GameSocketModel.ts';
+import {DrawTool, IDraw, IMessage, IPlayer, RoomState} from '../../model/GameModel.ts';
+import {GameSocketChannel, IDataChatRequest, ISocketMessageResponse} from '../../model/GameSocketModel.ts';
 import {Room} from "../Room.ts";
 import {getNbRandomWord, getRandomWordFromArray, revealOneLetter} from "../WordManager.ts";
 import {loggerService} from "../../server.ts";
 import {appRoomConfig} from "../../config.ts";
 import {
+    broadcastMessage,
     sendAskChooseWordMessage,
     sendGuessData,
     sendIDataInfoResponse,
     sendIDataInfoResponseToPlayer
 } from "../../resource/socket/GameSocketResource.ts";
+import {getValidChatMessage} from "../validator/ChatMessageValidator.ts";
 
 export default abstract class CycleRound {
 
@@ -175,19 +177,39 @@ export default abstract class CycleRound {
         }
     }
 
-    handleChatMessage(author: IPlayer, message: IDataChatRequest,
-                      broadcastMessageFunc: (_guessData: IDataGuessResponse | undefined) => void) {
+    handleChatMessage(author: IPlayer, message: IDataChatRequest) {
         const hasGuess = this.isGameStarted() && message.message.toLowerCase() === this._word?.toLowerCase();
+        const isSpectatorMessage = this.hasAlreadyGuessOrIsDrawer(author);
+
         if (hasGuess) {
-            if (this._playerTurn.includes(author) || this._playersGuess.includes(author)) return;
+            if (isSpectatorMessage) return;
 
             this.guessWord(author);
 
             sendIDataInfoResponseToPlayer(author, this._room);
             sendGuessData(this._room);
         } else {
-            broadcastMessageFunc(undefined);
+            const chatResponse: IMessage | undefined = getValidChatMessage(author, message.message, isSpectatorMessage);
+            if (!chatResponse) return;
+
+            const responseChatMessage: ISocketMessageResponse = {
+                channel: GameSocketChannel.CHAT,
+                data: chatResponse
+            };
+
+            this._room.addMessage(chatResponse);
+
+            let ignoresPlayersId: string[] = [];
+            if (isSpectatorMessage) {
+                ignoresPlayersId = this._room.players.filter(p => !this.hasAlreadyGuessOrIsDrawer(p)).map(p => p.playerId);
+            }
+
+            broadcastMessage(this._room, JSON.stringify(responseChatMessage), ignoresPlayersId);
         }
+    }
+
+    private hasAlreadyGuessOrIsDrawer(player: IPlayer): boolean {
+        return this._playerTurn.includes(player) || this._playersGuess.includes(player);
     }
 
     protected abstract guessWord(guessPlayer: IPlayer): void;

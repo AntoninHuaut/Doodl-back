@@ -5,7 +5,6 @@ import {
     IDataChooseWordRequest,
     IDataChooseWordResponse,
     IDataDrawResponse,
-    IDataGuessResponse,
     IDataInfoResponse,
     IDataInitRequest,
     IDataKickResponse,
@@ -19,17 +18,7 @@ import {checkIfRoomAvailableValide, getRoomById, startGame} from '../../core/Roo
 import {Room} from '../../core/Room.ts';
 import InvalidParameterValue from '../../model/exception/InvalidParameterValue.ts';
 import SocketInitNotPerformed from '../../model/exception/SocketInitNotPerformed.ts';
-import {getValidChatMessage} from '../../core/validator/ChatMessageValidator.ts';
-import {
-    DrawTool,
-    GameMode,
-    ICoordinate,
-    IDraw,
-    IMessage,
-    IPlayer,
-    IRoomConfig,
-    RoomState
-} from '../../model/GameModel.ts';
+import {DrawTool, GameMode, ICoordinate, IDraw, IPlayer, IRoomConfig, RoomState} from '../../model/GameModel.ts';
 import {isPlayerCanDraw} from '../../core/validator/DrawValidator.ts';
 import InvalidPermission from '../../model/exception/InvalidPermission.ts';
 import {appRoomConfig} from '../../config.ts';
@@ -227,7 +216,7 @@ function onMessageInitChannel(socketUser: SocketUser, message: ISocketMessageReq
         channel: GameSocketChannel.INIT,
         data: {
             playerId: socketUUID,
-            messages: room.messages,
+            messages: room.messages.filter(m => !m.isSpectator),
             draws: room.round.draws
         }
     };
@@ -244,25 +233,7 @@ function onMessageChatChannel(socketUser: SocketUser, message: ISocketMessageReq
     const [player, room] = checkInitAndGetRoom(socketUser);
     const chatMessage: IDataChatRequest = DataChatRequestSchema.parse(message.data);
 
-    room.round.handleChatMessage(player, chatMessage, (guessData: IDataGuessResponse | undefined) => {
-        if (guessData) {
-            broadcastMessage(room, JSON.stringify({
-                channel: GameSocketChannel.GUESS,
-                data: guessData
-            }));
-        } else {
-            const chatResponse: IMessage | undefined = getValidChatMessage(player, chatMessage.message);
-            if (!chatResponse) return;
-
-            const responseChatMessage: ISocketMessageResponse = {
-                channel: GameSocketChannel.CHAT,
-                data: chatResponse
-            };
-
-            room.addMessage(chatResponse);
-            broadcastMessage(room, JSON.stringify(responseChatMessage));
-        }
-    });
+    room.round.handleChatMessage(player, chatMessage);
 }
 
 function onMessageDrawChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
