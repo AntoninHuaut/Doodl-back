@@ -17,7 +17,7 @@ export default abstract class CycleRound {
 
     private static DELAY_NEXT_ROUND = 5 * 1000;
     private static DELAY_END_GAME = 10 * 1000;
-    private static DELAY_CHOOSE_WORD = 10 * 1000;
+    private static DELAY_CHOOSE_WORD = 15 * 1000;
 
     protected _room: Room;
     protected _dateStartedDrawing: Date | null;
