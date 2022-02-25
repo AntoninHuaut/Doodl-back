@@ -38,7 +38,7 @@ import CycleRound from "../../core/round/CycleRound.ts";
 
 const DataInitRequestSchema: z.ZodSchema<IDataInitRequest> = z.object({
     roomId: z.string(),
-    name: z.string().min(3).max(32),
+    name: z.string().min(appRoomConfig.minPlayerNameLength).max(appRoomConfig.maxPlayerNameLength),
     imgUrl: z.string()
 });
 const DataChatRequestSchema: z.ZodSchema<IDataChatRequest> = z.object({
