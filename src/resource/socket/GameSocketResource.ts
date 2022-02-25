@@ -14,7 +14,7 @@ import {
 } from '../../model/GameSocketModel.ts';
 import {loggerService} from '../../server.ts';
 import {createPlayer, deletePlayer} from '../../core/PlayerManager.ts';
-import {checkIfRoomAvailableValide, getRoomById, startGame} from '../../core/RoomManager.ts';
+import {checkIfRoomAvailableValide, createRoomWithId, getRoomById, startGame} from '../../core/RoomManager.ts';
 import {Room} from '../../core/Room.ts';
 import InvalidParameterValue from '../../model/exception/InvalidParameterValue.ts';
 import SocketInitNotPerformed from '../../model/exception/SocketInitNotPerformed.ts';
@@ -216,8 +216,10 @@ function onMessageInitChannel(socketUser: SocketUser, message: ISocketMessageReq
     const socketUUID = socketUser.socketUUID;
     const initMessage: IDataInitRequest = DataInitRequestSchema.parse(message.data);
 
-    const room: Room | undefined = getRoomById(initMessage.roomId);
-    if (room == null) throw new InvalidParameterValue("Invalid roomId");
+    let room: Room | undefined = getRoomById(initMessage.roomId);
+    if (room == null) {
+        room = createRoomWithId(initMessage.roomId);
+    }
 
     socketUser.player = createPlayer(socketUser, initMessage);
     socketUser.roomId = room.roomId;

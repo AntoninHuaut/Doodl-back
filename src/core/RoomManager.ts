@@ -4,15 +4,37 @@ import {loggerService} from '../server.ts';
 import InvalidState from "../model/exception/InvalidState.ts";
 import {appRoomConfig} from "../config.ts";
 import {kickPlayer} from "../resource/socket/GameSocketResource.ts";
+import InvalidParameterValue from "../model/exception/InvalidParameterValue.ts";
 
 const ROOM_CODE_LENGTH = 8;
+const DELETE_ROOM_EMPTY_AFTER_CREATION_TIMEOUT = 30 * 1000;
+
 const roomMap = new Map<string, Room>();
 
 export function createRoom(): Room {
-    const room = new Room(generateRoomId());
+    return createRoomWithId(generateUnusedRoomId());
+}
+
+export function createRoomWithId(roomId: string): Room {
+    if (roomMap.has(roomId)) throw new InvalidParameterValue("Duplicate roomId");
+
+    const room = new Room(roomId);
     loggerService.debug(`Creating room with id: ${room.roomId}`);
     roomMap.set(room.roomId, room);
+
+    setTimeout(() => deleteRoomIfEmpty(room.roomId), DELETE_ROOM_EMPTY_AFTER_CREATION_TIMEOUT);
+
     return room;
+}
+
+function deleteRoomIfEmpty(roomId: string) {
+    const room: Room | undefined = getRoomById(roomId);
+    if (!room) return;
+
+    if (room.players.length === 0) {
+        loggerService.debug(`RoomManager::deleteRoomIfEmpty Room (${room.roomId}) empty`);
+        deleteRoom(room);
+    }
 }
 
 export function deleteRoom(room: Room) {
@@ -88,6 +110,14 @@ export function getRoomList(): Room[] {
 function setAdmin(playerId: string, room: Room) {
     loggerService.debug(`Player (${playerId}) is now admin of room (${room.roomId})`);
     room.playerAdminId = playerId;
+}
+
+export function generateUnusedRoomId(): string {
+    let roomId: string | undefined;
+    do {
+        roomId = generateRoomId();
+    } while (!roomId || roomMap.has(roomId));
+    return roomId;
 }
 
 /**
