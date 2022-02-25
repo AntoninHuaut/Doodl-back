@@ -1,4 +1,4 @@
-import {assertEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts";
+import {assertEquals} from "https://deno.land/std@0.125.0/testing/asserts.ts";
 import {getGuessPointVariable} from "../src/core/WordManager.ts";
 
 const d = (n: number) => new Date(n)

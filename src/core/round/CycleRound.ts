@@ -18,6 +18,7 @@ export default abstract class CycleRound {
     private static DELAY_NEXT_ROUND = 5 * 1000;
     private static DELAY_END_GAME = 10 * 1000;
     private static DELAY_CHOOSE_WORD = 15 * 1000;
+    private static WORD_CHOOSE_WORD_NB = 3;
 
     protected _room: Room;
     protected _dateStartedDrawing: Date | null;
@@ -55,7 +56,7 @@ export default abstract class CycleRound {
     }
 
     startRound() {
-        this._possibleWords = getNbRandomWord(3);
+        this._possibleWords = getNbRandomWord(this._room.availableWords, CycleRound.WORD_CHOOSE_WORD_NB);
         loggerService.debug(`Round::startRound - Room (${this._room.roomId}) with possible words ${this._possibleWords}`);
 
         if (this._playerNoYetPlayedCurrentCycle.length === 0) {

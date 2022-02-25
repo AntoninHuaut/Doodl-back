@@ -1,15 +1,17 @@
 import CycleRound from './round/CycleRound.ts';
 import ClassicCycleRound from './round/ClassicCycleRound.ts';
-import {GameMode, IMessage, IPlayer, IRoomConfig, IRoomStatus, RoomState} from '../model/GameModel.ts';
+import {GameMode, IMessage, IPlayer, IRoomConfig, IRoomStatus, RoomState, WordList} from '../model/GameModel.ts';
 import InvalidState from '../model/exception/InvalidState.ts';
 import {sendIDataInfoResponse} from "../resource/socket/GameSocketResource.ts";
 import {loggerService} from "../server.ts";
+import {getWordList} from "./WordManager.ts";
 
 export class Room {
 
     static readonly DEFAULT_GAMEMODE: GameMode = GameMode.CLASSIC;
     static readonly DEFAULT_ROUND_TIME_DURATION: number = 90;
     static readonly DEFAULT_CYCLE_ROUND_BY_GAME: number = 5;
+    static readonly DEFAULT_WORD_LIST: WordList = WordList.ANIMALS;
 
     #roomId: string;
     #playerAdminId: string | undefined = undefined;
@@ -21,17 +23,21 @@ export class Room {
     #state: RoomState;
     #roomConfig: IRoomConfig;
 
+    #availableWords: string[];
+
     constructor(roomId: string) {
         this.#roomId = roomId;
         this.#roomConfig = {
             gameMode: Room.DEFAULT_GAMEMODE,
             timeByTurn: Room.DEFAULT_ROUND_TIME_DURATION,
-            cycleRoundByGame: Room.DEFAULT_CYCLE_ROUND_BY_GAME
+            cycleRoundByGame: Room.DEFAULT_CYCLE_ROUND_BY_GAME,
+            wordList: Room.DEFAULT_WORD_LIST
         };
         this.#round = new ClassicCycleRound(this, null, []);
         this.#state = RoomState.LOBBY;
         this.#players = [];
         this.#messages = [];
+        this.#availableWords = [];
     }
 
     #createRound() {
@@ -86,10 +92,11 @@ export class Room {
         sendIDataInfoResponse(this);
     }
 
-    set roomConfig(config: IRoomConfig) {
+    async setRoomConfig(config: IRoomConfig) {
         if (this.#state !== RoomState.LOBBY) throw new InvalidState("Room can only be updated in lobby");
 
         this.#roomConfig = config;
+        this.#availableWords = await getWordList(this.#roomConfig.wordList);
         this.#createRound();
     }
 
@@ -115,6 +122,10 @@ export class Room {
 
     isInGame(): boolean {
         return this.#state !== RoomState.LOBBY;
+    }
+
+    get availableWords(): string[] {
+        return this.#availableWords;
     }
 
     get roomConfig(): IRoomConfig {

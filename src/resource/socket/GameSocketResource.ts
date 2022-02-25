@@ -18,7 +18,16 @@ import {checkIfRoomAvailableValide, getRoomById, startGame} from '../../core/Roo
 import {Room} from '../../core/Room.ts';
 import InvalidParameterValue from '../../model/exception/InvalidParameterValue.ts';
 import SocketInitNotPerformed from '../../model/exception/SocketInitNotPerformed.ts';
-import {DrawTool, GameMode, ICoordinate, IDraw, IPlayer, IRoomConfig, RoomState} from '../../model/GameModel.ts';
+import {
+    DrawTool,
+    GameMode,
+    ICoordinate,
+    IDraw,
+    IPlayer,
+    IRoomConfig,
+    RoomState,
+    WordList
+} from '../../model/GameModel.ts';
 import {isPlayerCanDraw} from '../../core/validator/DrawValidator.ts';
 import InvalidPermission from '../../model/exception/InvalidPermission.ts';
 import {appRoomConfig} from '../../config.ts';
@@ -49,7 +58,8 @@ const DataDrawRequestSchema: z.ZodSchema<IDraw> = z.object({
 const DataConfigRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
     gameMode: z.nativeEnum(GameMode),
     timeByTurn: z.number().min(appRoomConfig.minTimeByTurn).max(appRoomConfig.maxTimeByTurn),
-    cycleRoundByGame: z.number().min(appRoomConfig.minCycleRoundByGame).max(appRoomConfig.maxCycleRoundByGame)
+    cycleRoundByGame: z.number().min(appRoomConfig.minCycleRoundByGame).max(appRoomConfig.maxCycleRoundByGame),
+    wordList: z.nativeEnum(WordList)
 });
 const DataChooseWordRequestSchema: z.ZodSchema<IDataChooseWordRequest> = z.object({
     word: z.string()
@@ -258,12 +268,12 @@ function onMessageInfoChannel(socketUser: SocketUser) {
     sendIDataInfoResponse(room);
 }
 
-function onMessageConfigChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
+async function onMessageConfigChannel(socketUser: SocketUser, message: ISocketMessageRequest) {
     const [player, room] = checkInitAndGetRoom(socketUser);
     if (!room.isPlayerAdmin(player)) throw new InvalidPermission("You don't have the permission to start the room");
     if (room.state !== RoomState.LOBBY) throw new InvalidState("The room must be in the LOBBY state");
 
-    room.roomConfig = DataConfigRequestSchema.parse(message.data);
+    await room.setRoomConfig(DataConfigRequestSchema.parse(message.data));
 
     const responseConfig: ISocketMessageResponse = {
         channel: GameSocketChannel.CONFIG,
