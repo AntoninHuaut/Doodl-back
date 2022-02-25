@@ -24,6 +24,8 @@ Le backend possède un serveur web permettant de servir le front, possède quelq
 Cependant, la majorité des échanges avec le frontend se fait aux niveaux des websockets. En effet, le serveur et les clients communiquent durant les parties en temps réel.
 Nous avons instauré une structure d'échange avec des canaux pour organiser ces derniers.  
 
+TODO ENV file
+
 ### Liste des canaux :  
 **PING / PONG** : permet de maintenir la connexion WebSocket en vie et d'éliminer les WebSockets mortes.  
 **INIT** : permet d'initialiser le joueur lors de sa connexion au serveur  

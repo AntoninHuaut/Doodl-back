@@ -14,11 +14,20 @@ import {
 } from '../../model/GameSocketModel.ts';
 import {loggerService} from '../../server.ts';
 import {createPlayer, deletePlayer} from '../../core/PlayerManager.ts';
-import {checkIfRoomAvailableValide, getRoomById, startGame} from '../../core/RoomManager.ts';
+import {checkIfRoomAvailableValide, createRoomWithId, getRoomById, startGame} from '../../core/RoomManager.ts';
 import {Room} from '../../core/Room.ts';
 import InvalidParameterValue from '../../model/exception/InvalidParameterValue.ts';
 import SocketInitNotPerformed from '../../model/exception/SocketInitNotPerformed.ts';
-import {DrawTool, GameMode, ICoordinate, IDraw, IPlayer, IRoomConfig, RoomState} from '../../model/GameModel.ts';
+import {
+    DrawTool,
+    GameMode,
+    ICoordinate,
+    IDraw,
+    IPlayer,
+    IRoomConfig,
+    RoomState,
+    WordList
+} from '../../model/GameModel.ts';
 import {isPlayerCanDraw} from '../../core/validator/DrawValidator.ts';
 import InvalidPermission from '../../model/exception/InvalidPermission.ts';
 import {appRoomConfig} from '../../config.ts';
@@ -49,7 +58,8 @@ const DataDrawRequestSchema: z.ZodSchema<IDraw> = z.object({
 const DataConfigRequestSchema: z.ZodSchema<IRoomConfig> = z.object({
     gameMode: z.nativeEnum(GameMode),
     timeByTurn: z.number().min(appRoomConfig.minTimeByTurn).max(appRoomConfig.maxTimeByTurn),
-    cycleRoundByGame: z.number().min(appRoomConfig.minCycleRoundByGame).max(appRoomConfig.maxCycleRoundByGame)
+    cycleRoundByGame: z.number().min(appRoomConfig.minCycleRoundByGame).max(appRoomConfig.maxCycleRoundByGame),
+    wordList: z.nativeEnum(WordList)
 });
 const DataChooseWordRequestSchema: z.ZodSchema<IDataChooseWordRequest> = z.object({
     word: z.string()
@@ -206,8 +216,10 @@ function onMessageInitChannel(socketUser: SocketUser, message: ISocketMessageReq
     const socketUUID = socketUser.socketUUID;
     const initMessage: IDataInitRequest = DataInitRequestSchema.parse(message.data);
 
-    const room: Room | undefined = getRoomById(initMessage.roomId);
-    if (room == null) throw new InvalidParameterValue("Invalid roomId");
+    let room: Room | undefined = getRoomById(initMessage.roomId);
+    if (room == null) {
+        room = createRoomWithId(initMessage.roomId);
+    }
 
     socketUser.player = createPlayer(socketUser, initMessage);
     socketUser.roomId = room.roomId;
@@ -263,7 +275,7 @@ function onMessageConfigChannel(socketUser: SocketUser, message: ISocketMessageR
     if (!room.isPlayerAdmin(player)) throw new InvalidPermission("You don't have the permission to start the room");
     if (room.state !== RoomState.LOBBY) throw new InvalidState("The room must be in the LOBBY state");
 
-    room.roomConfig = DataConfigRequestSchema.parse(message.data);
+    room.setRoomConfig(DataConfigRequestSchema.parse(message.data));
 
     const responseConfig: ISocketMessageResponse = {
         channel: GameSocketChannel.CONFIG,
@@ -273,7 +285,7 @@ function onMessageConfigChannel(socketUser: SocketUser, message: ISocketMessageR
     broadcastMessage(room, JSON.stringify(responseConfig));
 }
 
-function onMessageStartChannel(socketUser: SocketUser) {
+async function onMessageStartChannel(socketUser: SocketUser) {
     const [player, room] = checkInitAndGetRoom(socketUser);
     if (!room.isPlayerAdmin(player)) throw new InvalidPermission("You don't have the permission to start the room");
     if (room.state !== RoomState.LOBBY) throw new InvalidState("The room must be in the LOBBY state");
@@ -284,7 +296,8 @@ function onMessageStartChannel(socketUser: SocketUser) {
         data: room.roomConfig
     };
 
-    startGame(room);
+    await startGame(room);
+
     safeSend(socketUser, JSON.stringify(responseStart));
     sendIDataInfoResponse(room);
 }

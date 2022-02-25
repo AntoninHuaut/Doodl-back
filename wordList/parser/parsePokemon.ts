@@ -1726,4 +1726,4 @@ const json = [
     }
 ]
 
-Deno.writeTextFile("data/pokemon.ts", "export const pokemon = " + JSON.stringify(json.map(res => res.Nom)));
+Deno.writeTextFile("wordList/pokemon.ts", "export const words = " + JSON.stringify(json.map(res => res.Nom)));

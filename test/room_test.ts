@@ -1,5 +1,5 @@
 import {appServerConfig} from "../src/config.ts";
-import {assertExists} from "https://deno.land/std@0.118.0/testing/asserts.ts";
+import {assertExists} from "https://deno.land/std@0.125.0/testing/asserts.ts";
 
 let roomId: string | undefined;
 

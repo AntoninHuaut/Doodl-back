@@ -1,24 +1,37 @@
-import {pokemon} from "../../data/pokemon.ts";
 import {appRoomConfig} from "../config.ts";
+import {WordList} from "../model/GameModel.ts";
+import {loggerService} from "../server.ts";
 
-export function getNbRandomWord(nb: number): string[] {
-    const words: string[] = [];
+export function getNbRandomWord(words: string[], nb: number): string[] {
+    if (words.filter((w, idx) => words.indexOf(w) === idx).length < nb) return []; // With no duplicated
 
-    while (words.length < nb) {
-        const word = getRandomWord();
-        if (!words.includes(word)) {
-            words.push(word);
+    const generatedWords: string[] = [];
+    while (generatedWords.length < nb) {
+        const word = getRandomWord(words);
+        if (!generatedWords.includes(word)) {
+            generatedWords.push(word);
         }
     }
 
-    return words;
+    return generatedWords;
 }
 
-export function getRandomWord(): string {
-    return getRandomWordFromArray(pokemon);
+function getRandomWord(words: string[]): string {
+    return getRandomWordFromArray(words);
+}
+
+export async function getWordList(wordList: WordList): Promise<string[]> {
+    loggerService.debug(`WordManager::getWordList Loading "${"../../wordList/" + wordList.toLowerCase() + ".ts"}"`)
+    try {
+        return (await import("../../wordList/" + wordList.toLowerCase() + ".ts")).words;
+    } catch (_err) {
+        return [];
+    }
 }
 
 export function getRandomWordFromArray(words: string[]): string {
+    if (words.length === 0) return "Default";
+
     return words[Math.floor((Math.random() * words.length))];
 }
 

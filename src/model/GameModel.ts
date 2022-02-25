@@ -2,6 +2,7 @@ export interface IRoomConfig {
     gameMode: GameMode;
     timeByTurn: number;
     cycleRoundByGame: number;
+    wordList: WordList;
 }
 
 export interface IPlayer {
@@ -58,6 +59,11 @@ export enum DrawTool {
     ERASER = "ERASER",
     FILL = "FILL",
     CLEAR = "CLEAR"
+}
+
+export enum WordList {
+    ANIMALS = "ANIMALS",
+    POKEMON = "POKEMON"
 }
 
 export enum GameMode {
