@@ -11,6 +11,8 @@
     "maxTimeByTurn": 600,
     "minCycleRoundByGame": 1,
     "maxCycleRoundByGame": 32,
+    "minPlayerNameLength": 3,
+    "maxPlayerNameLength": 16,
 
     "maxChatMessageLength": 280,
     "minPointGuess": 500,
