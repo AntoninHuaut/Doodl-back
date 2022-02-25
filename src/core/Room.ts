@@ -38,6 +38,7 @@ export class Room {
         this.#players = [];
         this.#messages = [];
         this.#availableWords = [];
+
     }
 
     #createRound() {
@@ -71,8 +72,10 @@ export class Room {
         this.#messages.push(message);
     }
 
-    startGame() {
+    async startGame() {
         loggerService.debug(`Room::startGame - Room (${this.#roomId})`);
+
+        this.#availableWords = await getWordList(this.#roomConfig.wordList);
 
         this.#createRound();
         this.players.forEach(player => {
@@ -92,11 +95,10 @@ export class Room {
         sendIDataInfoResponse(this);
     }
 
-    async setRoomConfig(config: IRoomConfig) {
+    setRoomConfig(config: IRoomConfig) {
         if (this.#state !== RoomState.LOBBY) throw new InvalidState("Room can only be updated in lobby");
 
         this.#roomConfig = config;
-        this.#availableWords = await getWordList(this.#roomConfig.wordList);
         this.#createRound();
     }
 

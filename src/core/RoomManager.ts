@@ -73,12 +73,12 @@ export function checkIfRoomAvailableValide(roomId: string | undefined) {
     }, Math.floor(Math.random() * 90 + 10));
 }
 
-export function startGame(room: Room) {
+export async function startGame(room: Room) {
     if (room.players.length < appRoomConfig.minPlayerPerRoom) throw new InvalidState("Invalid minimum number of players");
     if (room.state !== RoomState.LOBBY) throw new InvalidState("Game can only be started from lobby");
 
     loggerService.debug(`RoomManager::startGame - Room (${room.roomId})`);
-    room.startGame();
+    await room.startGame();
 }
 
 export function getRoomList(): Room[] {
