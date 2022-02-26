@@ -410,10 +410,15 @@ export function sendIDataInfoResponseToPlayer(player: IPlayer, room: Room): void
         const word = (canHasRealWord ? room.round.word : room.round.anonymeWord) ?? "";
 
         infoResponse.roundData = {
+            delay: {
+                nextRound: CycleRound.DELAY_NEXT_ROUND,
+                endGame: CycleRound.DELAY_END_GAME,
+                chooseWord: CycleRound.DELAY_CHOOSE_WORD
+            },
             dateStartedDrawing: room.round.dateStartedDrawing,
             word: word,
             roundCurrentCycle: room.round.roundCurrentCycle,
-            playerTurn: room.round.playerTurn,
+            playerTurn: room.round.playerTurn
         };
     }
 

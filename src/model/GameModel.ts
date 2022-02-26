@@ -13,11 +13,18 @@ export interface IPlayer {
     roundPoint: number;
 }
 
+export interface RoundDelayData {
+    nextRound: number;
+    endGame: number;
+    chooseWord: number;
+}
+
 export interface RoundData {
     dateStartedDrawing: Date | null;
     roundCurrentCycle: number;
     word: string;
     playerTurn: IPlayer[];
+    delay: RoundDelayData;
 }
 
 export interface IRoomStatus {

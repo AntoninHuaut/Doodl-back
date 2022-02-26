@@ -15,9 +15,9 @@ import {getValidChatMessage} from "../validator/ChatMessageValidator.ts";
 
 export default abstract class CycleRound {
 
-    private static DELAY_NEXT_ROUND = 5 * 1000;
-    private static DELAY_END_GAME = 10 * 1000;
-    private static DELAY_CHOOSE_WORD = 15 * 1000;
+    public static DELAY_NEXT_ROUND = 5 * 1000;
+    public static DELAY_END_GAME = 10 * 1000;
+    public static DELAY_CHOOSE_WORD = 15 * 1000;
     private static WORD_CHOOSE_WORD_NB = 3;
 
     protected _room: Room;
