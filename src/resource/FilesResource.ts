@@ -4,7 +4,7 @@ export default class FilesResource extends Drash.Resource {
 
     public paths = [
         "/favicon.ico",
-        "/public/.*\.(html|txt|ico|jpg|png|gif|svg|css|js|json|map)",
+        "/public/.*\.(html|txt|ico|jpg|png|gif|svg|css|js|wav|mp3|json|map)",
     ];
 
     public GET(request: Drash.Request, response: Drash.Response) {
