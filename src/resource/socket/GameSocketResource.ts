@@ -411,11 +411,12 @@ export function sendIDataInfoResponseToPlayer(player: IPlayer, room: Room): void
 
         infoResponse.roundData = {
             delay: {
-                nextRound: CycleRound.DELAY_NEXT_ROUND,
+                endRound: CycleRound.DELAY_NEXT_ROUND,
                 endGame: CycleRound.DELAY_END_GAME,
+                drawTime: room.roomConfig.timeByTurn,
                 chooseWord: CycleRound.DELAY_CHOOSE_WORD
             },
-            dateStartedDrawing: room.round.dateStartedDrawing,
+            dateStateStarted: room.round.dateStateStarted,
             word: word,
             roundCurrentCycle: room.round.roundCurrentCycle,
             playerTurn: room.round.playerTurn

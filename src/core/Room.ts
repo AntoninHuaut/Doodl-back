@@ -112,7 +112,7 @@ export class Room {
 
     get status(): IRoomStatus {
         return {
-            isPlaying: this.#round.dateStartedDrawing !== null,
+            isPlaying: this.#round.dateStateStarted !== null,
             playerList: this.#players,
             playerTurn: this.#round.playerTurn
         }

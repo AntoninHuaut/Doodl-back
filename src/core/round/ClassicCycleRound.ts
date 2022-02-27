@@ -15,7 +15,7 @@ export default class ClassicCycleRound extends CycleRound {
 
         this._playersGuess.push(guessPlayer);
 
-        const startDate = this._dateStartedDrawing as Date;
+        const startDate = this._dateStateStarted as Date;
         const endDate = new Date(startDate.getTime() + this._room.roomConfig.timeByTurn * 1000);
         const guessGainPoint = getGuessPoint(startDate, endDate, new Date());
         const drawGainPoint = Math.round(guessGainPoint / 2);

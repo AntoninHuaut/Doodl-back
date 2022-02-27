@@ -15,13 +15,13 @@ import {getValidChatMessage} from "../validator/ChatMessageValidator.ts";
 
 export default abstract class CycleRound {
 
-    public static DELAY_NEXT_ROUND = 5 * 1000;
-    public static DELAY_END_GAME = 10 * 1000;
-    public static DELAY_CHOOSE_WORD = 15 * 1000;
+    public static DELAY_NEXT_ROUND = 5; // seconds
+    public static DELAY_END_GAME = 10; // seconds
+    public static DELAY_CHOOSE_WORD = 15; // seconds
     private static WORD_CHOOSE_WORD_NB = 3;
 
     protected _room: Room;
-    protected _dateStartedDrawing: Date | null;
+    protected _dateStateStarted: Date | null;
 
     protected _playerTurn: IPlayer[];
     protected _playerNoYetPlayedCurrentCycle: IPlayer[];
@@ -41,7 +41,7 @@ export default abstract class CycleRound {
 
     protected constructor(room: Room, dateStartedDrawing: Date | null, playerTurn: IPlayer[]) {
         this._room = room;
-        this._dateStartedDrawing = dateStartedDrawing;
+        this._dateStateStarted = dateStartedDrawing;
         this._playerTurn = playerTurn;
         this._draws = [];
         this._playersGuess = [];
@@ -73,19 +73,21 @@ export default abstract class CycleRound {
         this.#setNextPlayerTurn();
 
         this._room.state = RoomState.CHOOSE_WORD;
+        this._dateStateStarted = new Date();
+
         sendAskChooseWordMessage(this);
         sendIDataInfoResponse(this._room);
 
         this._timeoutUserChooseWord = setTimeout(() => {
             this._timeoutUserChooseWord = null;
             this.setUserChooseWord(getRandomWordFromArray(this._possibleWords));
-        }, CycleRound.DELAY_CHOOSE_WORD);
+        }, CycleRound.DELAY_CHOOSE_WORD * 1000);
     }
 
     endRound() {
         loggerService.debug(`Round::endRound - Room ${this._room.roomId} ended`);
 
-        this._dateStartedDrawing = null;
+        this._dateStateStarted = null;
         this._draws.length = 0;
         this._playerTurn.length = 0;
         this._playersGuess.length = 0;
@@ -108,13 +110,15 @@ export default abstract class CycleRound {
 
         if (this._playerNoYetPlayedCurrentCycle.length === 0 && this._currentCycleRoundNumber === this._room.roomConfig.cycleRoundByGame) {
             this._room.state = RoomState.END_GAME;
+            this._dateStateStarted = new Date();
+
             sendIDataInfoResponse(this._room);
 
             this.#clearEndGameTimeout();
             this._timeoutEndGameId = setTimeout(() => {
                 this._timeoutEndGameId = null;
                 this._room.endGame();
-            }, CycleRound.DELAY_END_GAME);
+            }, CycleRound.DELAY_END_GAME * 1000);
         } else {
             this.startRound();
         }
@@ -156,9 +160,10 @@ export default abstract class CycleRound {
         this.#clearUserChooseWordTimeout();
 
         this._room.state = RoomState.DRAWING;
+        this._dateStateStarted = new Date();
+
         this._word = word;
         this._anonymeWord = revealOneLetter(this._word);
-        this._dateStartedDrawing = new Date();
         this._intervalId = setInterval(() => this.checkRoundOver(), 1000);
 
         sendIDataInfoResponse(this._room);
@@ -218,7 +223,7 @@ export default abstract class CycleRound {
     public checkRoundOver() {
         if (!this._room.isInGame()) return;
 
-        const timeIsOver = this._dateStartedDrawing && new Date().getTime() > this._dateStartedDrawing.getTime() + this._room.roomConfig.timeByTurn * 1000
+        const timeIsOver = this._room.state === RoomState.DRAWING && this._dateStateStarted && new Date().getTime() > this._dateStateStarted.getTime() + this._room.roomConfig.timeByTurn * 1000
         const allPlayerGuessed = this._room.players.filter(p => !this.hasGuessOrDrawer(p)).length === 0;
         const roundOver: boolean = timeIsOver || this._playerTurn.length === 0 || allPlayerGuessed;
 
@@ -227,17 +232,14 @@ export default abstract class CycleRound {
             this.#clearRunnable();
 
             this._room.state = RoomState.END_ROUND;
+            this._dateStateStarted = new Date();
             sendIDataInfoResponse(this._room);
 
             this._timeoutNextRoundId = setTimeout(() => {
                 this._timeoutNextRoundId = null;
                 this.nextRound();
-            }, CycleRound.DELAY_NEXT_ROUND);
+            }, CycleRound.DELAY_NEXT_ROUND * 1000);
         }
-    }
-
-    isGameStarted(): boolean {
-        return this._dateStartedDrawing !== null && this._word !== null;
     }
 
     #setNextPlayerTurn() {
@@ -272,8 +274,8 @@ export default abstract class CycleRound {
         return this._playersGuess;
     }
 
-    get dateStartedDrawing() {
-        return this._dateStartedDrawing;
+    get dateStateStarted() {
+        return this._dateStateStarted;
     }
 
     get roundCurrentCycle() {

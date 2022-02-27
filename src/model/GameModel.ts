@@ -14,13 +14,14 @@ export interface IPlayer {
 }
 
 export interface RoundDelayData {
-    nextRound: number;
+    drawTime: number;
+    endRound: number;
     endGame: number;
     chooseWord: number;
 }
 
 export interface RoundData {
-    dateStartedDrawing: Date | null;
+    dateStateStarted: Date | null;
     roundCurrentCycle: number;
     word: string;
     playerTurn: IPlayer[];
