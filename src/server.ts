@@ -6,6 +6,7 @@ import FrontResource from "./resource/FrontResource.ts";
 import FilesResource from "./resource/FilesResource.ts";
 
 import ErrorHandler from "./handler/ErrorHandler.ts";
+import TimeResource from "./resource/TimeResource.ts";
 import GitHookResource from "./resource/GitHookResource.ts";
 import ConfigResource from "./resource/ConfigResource.ts";
 import RoomResource from "./resource/RoomResource.ts";
@@ -28,6 +29,7 @@ export const server = new Drash.Server({
     resources: [
         FrontResource, // MUST BE THE FIRST
 
+        TimeResource,
         FilesResource,
         ConfigResource,
         GitHookResource,
