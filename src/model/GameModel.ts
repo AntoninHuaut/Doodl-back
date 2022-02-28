@@ -71,7 +71,8 @@ export enum DrawTool {
 
 export enum WordList {
     ANIMALS = "ANIMALS",
-    POKEMON = "POKEMON"
+    POKEMON = "POKEMON",
+    DEMO = "DEMO"
 }
 
 export enum GameMode {
