@@ -37,6 +37,7 @@ Il doit contenir le mot de passe pour se connecter en administrateur.
 
 ## Lancer l'application
 1) Il faut se rendre sur le site de [Deno](https://deno.land/#installation) et l'installer.  
+Si Deno est déjà installé, il faut s'assurer qu'il soit à jour via `deno update`
 2) Il faut créer un fichier d'environnement comme expliquer au dessus.  
 3) Il faut installer un script runner puis lancer le projet.
 ```shell
