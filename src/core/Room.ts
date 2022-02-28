@@ -123,7 +123,7 @@ export class Room {
     }
 
     isInGame(): boolean {
-        return this.#state !== RoomState.LOBBY;
+        return this.#state !== RoomState.LOBBY && this.#state !== RoomState.END_GAME;
     }
 
     get availableWords(): string[] {
