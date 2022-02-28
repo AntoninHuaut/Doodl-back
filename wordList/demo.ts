@@ -1,0 +1,1 @@
+export const words = ["Maison", "Lunette", "Voiture", "Téléphone", "Soleil", "Champignon"]
