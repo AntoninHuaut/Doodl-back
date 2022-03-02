@@ -184,7 +184,8 @@ export default abstract class CycleRound {
     }
 
     handleChatMessage(author: IPlayer, message: IDataChatRequest) {
-        const hasGuess = this._room.state === RoomState.DRAWING && message.message.toLowerCase() === this._word?.toLowerCase();
+        const playerMessage = message.message.toLowerCase().trim();
+        const hasGuess = this._room.state === RoomState.DRAWING && playerMessage === this._word?.toLowerCase();
         const isSpectatorMessage = this.hasAlreadyGuessOrIsDrawer(author);
 
         if (hasGuess) {
