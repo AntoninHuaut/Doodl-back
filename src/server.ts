@@ -7,7 +7,6 @@ import FilesResource from "./resource/FilesResource.ts";
 
 import ErrorHandler from "./handler/ErrorHandler.ts";
 import TimeResource from "./resource/TimeResource.ts";
-import GitHookResource from "./resource/GitHookResource.ts";
 import ConfigResource from "./resource/ConfigResource.ts";
 import RoomResource from "./resource/RoomResource.ts";
 import GameSocketResource from "./resource/socket/GameSocketResource.ts";
@@ -32,7 +31,6 @@ export const server = new Drash.Server({
         TimeResource,
         FilesResource,
         ConfigResource,
-        GitHookResource,
         RoomResource,
         GameSocketResource,
         AdminSocketResource
